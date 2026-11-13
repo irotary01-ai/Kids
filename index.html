@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Citesc singur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow reading column, one question per screen, four stacked word answers. */
+:root{
+  --paper:#eef4fb;
+  --card:#ffffff;
+  --ink:#14284a;
+  --soft:#566a8c;
+  --line:#c9d7ea;
+  --accent:#1f5fd0;
+  --accent-ink:#ffffff;
+  --sun:#ffc93c;
+  --good:#12805a;
+  --good-bg:#dcf5ea;
+  --bad:#b8323c;
+  --bad-bg:#fbe1e3;
+  --font:"Andika","Trebuchet MS","Verdana",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0f1a2e;--card:#18263f;--ink:#eaf1fb;--soft:#a3b4d0;--line:#31446a;
+    --accent:#6ea4ff;--accent-ink:#0b1730;--sun:#ffc93c;
+    --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0f1a2e;--card:#18263f;--ink:#eaf1fb;--soft:#a3b4d0;--line:#31446a;
+  --accent:#6ea4ff;--accent-ink:#0b1730;--sun:#ffc93c;
+  --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:18px;line-height:1.45}
+main{max-width:620px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
+h1 span{box-shadow:inset 0 -0.38em 0 var(--sun)}
+h2{font-size:22px;margin:0;text-wrap:balance}
+p{margin:0}
+.soft{color:var(--soft)}
+.small{font-size:16px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 130px}
+button{font:inherit;color:inherit;cursor:pointer;border-radius:14px;border:2px solid var(--line);background:var(--card);padding:14px 16px;text-align:left}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.pick[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.pick b{display:block;font-size:20px}
+.seg button{text-align:center;padding:10px;font-weight:700}
+.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;font-size:22px;text-align:center;padding:16px}
+.plain{text-align:center;font-weight:700}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700}
+.top button{padding:8px 12px;font-size:16px;font-weight:400}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--sun);width:0;transition:width .3s}
+.cat{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);font-weight:700}
+.q{font-size:28px;line-height:1.3;font-weight:700;text-wrap:balance}
+.answers{display:flex;flex-direction:column;gap:12px}
+.ans{display:flex;gap:14px;align-items:center;font-size:23px;line-height:1.3;padding:16px}
+.ans .k{flex:none;width:38px;height:38px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:18px;font-weight:700;color:var(--soft)}
+.ans.ok{background:var(--good-bg);border-color:var(--good)}
+.ans.ok .k{border-color:var(--good);color:var(--good)}
+.ans.no{background:var(--bad-bg);border-color:var(--bad)}
+.ans.no .k{border-color:var(--bad);color:var(--bad)}
+.ans:disabled{cursor:default;opacity:1;color:var(--ink)}
+.say{font-size:22px;font-weight:700;min-height:32px}
+.say.ok{color:var(--good)}
+.say.no{color:var(--bad)}
+.score{font-size:56px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.score small{font-size:24px;color:var(--soft);font-weight:400}
+.stars{font-size:34px;letter-spacing:6px;color:var(--sun)}
+ul.fix{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+ul.fix li{border-left:5px solid var(--sun);padding-left:12px}
+ul.fix b{display:block;color:var(--good)}
+body.caps .read{text-transform:uppercase}
+[hidden]{display:none!important}
+@media (max-width:400px){.q{font-size:25px}.ans{font-size:21px}h1{font-size:30px}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+
+<section id="home">
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <h1><span>Citesc singur</span></h1>
+    <p class="read">Citește întrebarea. Alege răspunsul corect. La fiecare test primești alte întrebări.</p>
+
+    <div class="card">
+      <h2 class="read">Alege nivelul</h2>
+      <div class="row">
+        <button class="pick" id="lvl1" type="button" aria-pressed="true"><b class="read">Nivelul 1</b><span class="soft small read">Întrebări scurte și ușoare</span><span class="soft small" id="c1" style="display:block"></span></button>
+        <button class="pick" id="lvl2" type="button" aria-pressed="false"><b class="read">Nivelul 2</b><span class="soft small read">Întrebări mai grele</span><span class="soft small" id="c2" style="display:block"></span></button>
+        <button class="pick" id="lvl3" type="button" aria-pressed="false"><b class="read">Nivelul 3</b><span class="soft small read">Întrebări grele, pentru 9 ani</span><span class="soft small" id="c3" style="display:block"></span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="read">Câte întrebări vrei?</h2>
+      <div class="row seg">
+        <button class="pick" type="button" data-n="5" aria-pressed="false">5</button>
+        <button class="pick" type="button" data-n="10" aria-pressed="true">10</button>
+        <button class="pick" type="button" data-n="15" aria-pressed="false">15</button>
+        <button class="pick" type="button" data-n="20" aria-pressed="false">20</button>
+      </div>
+      <button class="pick plain" id="caps" type="button" aria-pressed="false">LITERE MARI DE TIPAR</button>
+    </div>
+
+    <button class="go read" id="start" type="button">Începe testul</button>
+    <p class="soft small" id="bank"></p>
+  </div>
+</section>
+
+<section id="quiz" hidden>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="top"><span id="count" class="read"></span><button id="quit" type="button" class="read">Oprește</button></div>
+    <div class="bar"><i id="prog"></i></div>
+    <div class="card">
+      <span class="cat" id="cat"></span>
+      <p class="q read" id="q"></p>
+    </div>
+    <div class="answers" id="answers"></div>
+    <p class="say read" id="say" aria-live="polite"></p>
+    <button class="go read" id="next" type="button" hidden>Mai departe</button>
+  </div>
+</section>
+
+<section id="end" hidden>
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div class="card">
+      <h2 class="read" id="endTitle"></h2>
+      <div class="score"><span id="sc"></span> <small id="of"></small></div>
+      <div class="stars" id="stars" aria-hidden="true"></div>
+      <p class="read" id="endMsg"></p>
+    </div>
+    <div class="card" id="fixCard">
+      <h2 class="read">Citește încă o dată</h2>
+      <ul class="fix" id="fix"></ul>
+    </div>
+    <button class="go read" id="again" type="button">Alt test</button>
+    <button class="plain read" id="back" type="button">Schimbă nivelul</button>
+  </div>
+</section>
+
+</main>
+<script>
+/* Format: întrebare|răspuns corect|greșit|greșit|greșit. Liniile cu # sunt categorii. */
+const L1 = `
+#Animale
+Ce animal face „miau”?|Pisica|Câinele|Vaca|Calul
+Ce animal face „ham”?|Câinele|Pisica|Oaia|Rața
+Ce animal ne dă lapte?|Vaca|Găina|Câinele|Pisica
+Ce pasăre ne dă ouă?|Găina|Pisica|Vaca|Oaia
+Câte picioare are un câine?|Patru|Două|Șase|Opt
+Câte picioare are o găină?|Două|Patru|Șase|Trei
+Ce animal are trompă?|Elefantul|Leul|Ursul|Lupul
+Ce animal are gâtul foarte lung?|Girafa|Zebra|Vulpea|Ariciul
+Unde trăiește peștele?|În apă|În copac|În cuib|În nisip
+Ce animal are țepi pe spate?|Ariciul|Iepurele|Veverița|Șoarecele
+Ce animal ne dă lână?|Oaia|Calul|Porcul|Rața
+Ce insectă face miere?|Albina|Musca|Furnica|Țânțarul
+Ce animal sare și are urechi lungi?|Iepurele|Ursul|Porcul|Vaca
+Cine este „regele animalelor”?|Leul|Șoarecele|Iepurele|Ariciul
+Ce animal are dungi albe și negre?|Zebra|Leul|Ursul|Vulpea
+Cum se numește puiul câinelui?|Cățel|Mânz|Vițel|Miel
+Cum se numește puiul pisicii?|Pisoi|Ied|Purcel|Boboc
+Cum se numește puiul vacii?|Vițel|Mânz|Miel|Cățel
+Ce pasăre nu zboară, dar înoată bine?|Pinguinul|Vrabia|Rândunica|Porumbelul
+Ce animal își poartă casa în spate?|Melcul|Șoarecele|Fluturele|Vulpea
+Ce animal doarme iarna în bârlog?|Ursul|Calul|Câinele|Găina
+Ce animal sare prin copaci și adună alune?|Veverița|Vaca|Peștele|Broasca
+Ce animal face „oac”?|Broasca|Rața|Oaia|Capra
+Ce pasăre cântă „cucurigu”?|Cocoșul|Rața|Gâsca|Curcanul
+Ce devine omida când crește?|Fluture|Albină|Pasăre|Melc
+Câte picioare are un păianjen?|Opt|Șase|Patru|Zece
+Care este cel mai mare animal din mare?|Balena|Crabul|Racul|Somnul
+#Natură
+Ce culoare are iarba?|Verde|Roșie|Albastră|Neagră
+Ce culoare are cerul senin?|Albastru|Verde|Roșu|Maro
+Ce culoare are zăpada?|Albă|Neagră|Verde|Roșie
+Ce ne dă lumină ziua?|Soarele|Luna|Norul|Vântul
+Ce vedem noaptea pe cer?|Luna și stelele|Soarele|Curcubeul|Fluturii
+Ce cade din nori când plouă?|Apă|Nisip|Frunze|Pietre
+Ce cade din cer iarna?|Zăpadă|Frunze|Flori|Nisip
+Câte anotimpuri are un an?|Patru|Două|Trei|Cinci
+În ce anotimp ninge?|Iarna|Vara|Primăvara|Toamna
+În ce anotimp cad frunzele?|Toamna|Iarna|Vara|Primăvara
+În ce anotimp este cel mai cald?|Vara|Iarna|Toamna|Primăvara
+În ce anotimp înfloresc pomii?|Primăvara|Iarna|Toamna|Vara
+Ce apare pe cer după ploaie, când iese soarele?|Curcubeul|Luna|Zăpada|Ceața
+De ce au nevoie plantele ca să crească?|De apă și lumină|De zăpadă|De întuneric|De nisip
+Ce fruct este galben și lung?|Banana|Cireașa|Pruna|Căpșuna
+Ce legumă este portocalie și crește în pământ?|Morcovul|Castravetele|Varza|Mazărea
+Ce crește dintr-o sămânță?|O plantă|O piatră|Un nor|O stea
+Ce parte a copacului stă în pământ?|Rădăcina|Frunza|Floarea|Creanga
+Când răsare soarele?|Dimineața|Seara|Noaptea|La amiază
+Când apune soarele?|Seara|Dimineața|La amiază|La prânz
+Ce este gheața?|Apă înghețată|Sticlă|Piatră albă|Zahăr
+Ce fruct mare este verde pe dinafară și roșu pe dinăuntru?|Pepenele|Mărul|Para|Lămâia
+Ce gust are lămâia?|Acru|Dulce|Sărat|Iute
+Ce gust are mierea?|Dulce|Acru|Sărat|Amar
+Din ce pom culegem nuci?|Din nuc|Din măr|Din cireș|Din brad
+Ce copac rămâne verde și iarna?|Bradul|Mărul|Nucul|Cireșul
+#Corpul meu
+Câte degete ai la o mână?|Cinci|Patru|Șase|Zece
+Câte degete ai la două mâini?|Zece|Cinci|Opt|Douăzeci
+Cu ce vedem?|Cu ochii|Cu urechile|Cu nasul|Cu gura
+Cu ce auzim?|Cu urechile|Cu ochii|Cu mâinile|Cu nasul
+Cu ce mirosim?|Cu nasul|Cu urechile|Cu ochii|Cu degetele
+Cu ce simțim gustul?|Cu limba|Cu nasul|Cu urechile|Cu părul
+Câți ochi are un om?|Doi|Unu|Trei|Patru
+Ce bate în pieptul nostru?|Inima|Stomacul|Genunchiul|Cotul
+Cu ce ne spălăm pe dinți?|Cu periuța de dinți|Cu pieptenele|Cu prosopul|Cu buretele
+Când ne spălăm pe mâini?|Înainte de masă|Numai duminica|Niciodată|Doar iarna
+Ce doctor are grijă de dinți?|Dentistul|Bucătarul|Șoferul|Pictorul
+Cu ce mergem?|Cu picioarele|Cu mâinile|Cu urechile|Cu nasul
+Cu ce mestecăm mâncarea?|Cu dinții|Cu genele|Cu unghiile|Cu sprâncenele
+De ce dormim noaptea?|Ca să ne odihnim|Ca să ne fie foame|Ca să ne plictisim|Ca să obosim
+Ce este sănătos să mâncăm în fiecare zi?|Fructe și legume|Numai bomboane|Numai chipsuri|Numai ciocolată
+#Timpul
+Câte zile are o săptămână?|Șapte|Cinci|Zece|Douăsprezece
+Ce zi vine după luni?|Marți|Joi|Duminică|Vineri
+Ce zi vine după sâmbătă?|Duminică|Luni|Vineri|Miercuri
+Ce zi este înainte de vineri?|Joi|Sâmbătă|Luni|Marți
+Care este prima lună a anului?|Ianuarie|Martie|Decembrie|Iunie
+Care este ultima lună a anului?|Decembrie|Ianuarie|August|Mai
+Câte luni are un an?|Douăsprezece|Zece|Șapte|Patru
+În ce lună este Crăciunul?|Decembrie|Martie|Iulie|Septembrie
+În ce lună începe școala?|Septembrie|Ianuarie|Iunie|Aprilie
+Când mâncăm micul dejun?|Dimineața|Seara|Noaptea|La amiază
+Ce ne arată ceasul?|Ora|Greutatea|Drumul|Vremea
+Ce sărbătorim la 1 iunie?|Ziua Copilului|Crăciunul|Anul Nou|Paștele
+Ce dăruim la 1 martie?|Un mărțișor|Un brad|Un ou roșu|Un colac
+#Țara și lumea
+Care este capitala Republicii Moldova?|Chișinău|Bălți|Cahul|Orhei
+Ce culori are steagul Moldovei?|Albastru, galben, roșu|Alb, verde, roșu|Negru, alb, verde|Roșu, alb, albastru
+Cum se numesc banii din Moldova?|Lei|Euro|Dolari|Lire
+Pe ce planetă trăim?|Pământ|Marte|Venus|Jupiter
+Ce formă are Pământul?|Rotundă, ca o minge|Pătrată|Plată, ca o masă|Triunghiulară
+Care apă este cea mai mare?|Oceanul|Râul|Lacul|Izvorul
+Unde este mult nisip și foarte cald?|În deșert|În pădure|La munte|În oraș
+Unde cresc foarte mulți copaci?|În pădure|În deșert|Pe mare|Pe Lună
+Ce este un munte?|Un loc foarte înalt|O apă mare|Un oraș|Un drum
+Ce este o insulă?|Pământ înconjurat de apă|Un munte înalt|O pădure deasă|Un râu lung
+#Oameni și lucruri
+Cine ne învață la școală?|Învățătorul|Șoferul|Bucătarul|Poștașul
+Cine stinge focul?|Pompierul|Doctorul|Brutarul|Pictorul
+Cine face pâinea?|Brutarul|Croitorul|Pilotul|Polițistul
+Cine conduce avionul?|Pilotul|Șoferul|Marinarul|Mecanicul
+Cine ne tratează când suntem bolnavi?|Doctorul|Pompierul|Zidarul|Cântărețul
+Cine construiește case?|Zidarul|Brutarul|Doctorul|Pilotul
+Ce culoare a semaforului spune „Stai”?|Roșu|Verde|Albastru|Alb
+Ce culoare a semaforului spune „Mergi”?|Verde|Roșu|Negru|Mov
+Pe unde trecem strada?|Pe trecerea de pietoni|Printre mașini|Pe oriunde|În fugă, pe roșu
+Ce merge pe șine?|Trenul|Autobuzul|Bicicleta|Vaporul
+Ce zboară pe cer?|Avionul|Trenul|Vaporul|Camionul
+Ce plutește pe apă?|Vaporul|Trenul|Autobuzul|Tractorul
+Câte roți are o bicicletă?|Două|Trei|Patru|Una
+Câte roți are o mașină?|Patru|Două|Trei|Șase
+Din ce se face pâinea?|Din făină|Din nisip|Din zahăr|Din orez
+De unde vine laptele?|De la vacă|Din copac|Din fântână|Din pământ
+Din ce se face brânza?|Din lapte|Din făină|Din ouă|Din mere
+Unde cumpărăm pâine?|La magazin|La bibliotecă|La spital|La școală
+De unde luăm cărți de citit?|De la bibliotecă|De la farmacie|De la piață|De la gară
+Unde cumpărăm medicamente?|La farmacie|La brutărie|La librărie|La stadion
+Ce spunem când primim ceva?|Mulțumesc|La revedere|Bună seara|Noapte bună
+Ce spunem dimineața când ne întâlnim?|Bună dimineața|Noapte bună|La revedere|Poftă bună
+La ce număr sunăm în caz de urgență?|112|100|999|123
+Cu ce scriem în caiet?|Cu pixul|Cu lingura|Cu pieptenele|Cu foarfeca
+Cu ce tăiem hârtia?|Cu foarfeca|Cu rigla|Cu guma|Cu pensula
+#Numere și forme
+Câte colțuri are un triunghi?|Trei|Patru|Două|Cinci
+Câte laturi are un pătrat?|Patru|Trei|Cinci|Șase
+Ce formă are o minge?|Rotundă|Pătrată|Triunghiulară|Lungă
+Ce număr vine după 9?|10|8|11|19
+Ce număr vine înainte de 5?|4|6|3|7
+Cât fac 2 + 2?|4|3|5|6
+Cât fac 5 + 5?|10|9|11|15
+Cât fac 3 + 1?|4|2|5|3
+Cât fac 10 − 1?|9|8|11|10
+Câte lucruri sunt într-o pereche?|Două|Trei|Patru|Zece
+Care număr este cel mai mare?|20|12|9|15
+Ce formă are roata?|Cerc|Pătrat|Triunghi|Dreptunghi
+Ce este mai greu?|Un elefant|O pisică|Un șoarece|O vrabie
+Ce este mai înalt?|Un bloc|Un scaun|O masă|Un copil
+#Cuvinte și povești
+Cu ce literă începe cuvântul „mama”?|M|A|N|P
+Cu ce literă începe cuvântul „soare”?|S|R|O|E
+Cu ce literă se termină cuvântul „pom”?|M|P|O|N
+Care este prima literă din alfabet?|A|B|Z|M
+Câte litere are cuvântul „casă”?|Patru|Trei|Cinci|Două
+Câte silabe are cuvântul „ma-ma”?|Două|Una|Trei|Patru
+Care este opusul cuvântului „mare”?|Mic|Înalt|Gras|Lung
+Care este opusul cuvântului „cald”?|Rece|Fierbinte|Dulce|Ud
+Care este opusul cuvântului „zi”?|Noapte|Seară|Soare|Lună
+Care este opusul cuvântului „sus”?|Jos|Lângă|Departe|Aproape
+Care cuvânt rimează cu „floare”?|Soare|Copac|Frunză|Iarbă
+Care cuvânt numește un animal?|Vulpe|Masă|Carte|Pantof
+Care cuvânt numește un fruct?|Pară|Scaun|Morcov|Pâine
+Care cuvânt numește o culoare?|Galben|Rotund|Dulce|Mare
+Cine a pierdut un pantof la bal?|Cenușăreasa|Scufița Roșie|Albă-ca-Zăpada|Motanul Încălțat
+Pe cine a întâlnit Scufița Roșie în pădure?|Pe lup|Pe urs|Pe vulpe|Pe iepure
+Câți pitici are Albă-ca-Zăpada?|Șapte|Trei|Cinci|Zece
+Câți iezi are capra din poveste?|Trei|Doi|Șapte|Cinci
+Din ce și-a făcut casa cel mai harnic purceluș?|Din cărămidă|Din paie|Din lemn|Din hârtie
+Cui îi crește nasul când minte?|Lui Pinocchio|Lui Făt-Frumos|Lui Păcală|Lupului
+`;
+
+const L2 = `
+#Animale
+Ce mănâncă animalele erbivore?|Plante|Carne|Pești|Insecte
+Cum se numesc animalele care mănâncă numai carne?|Carnivore|Erbivore|Domestice|Rozătoare
+Care este cel mai rapid animal de pe uscat?|Ghepardul|Leul|Calul|Lupul
+Care este cel mai mare animal de pe uscat?|Elefantul|Girafa|Hipopotamul|Ursul
+Care este cel mai înalt animal?|Girafa|Elefantul|Cămila|Struțul
+Care este cea mai mare pasăre?|Struțul|Vulturul|Barza|Lebăda
+Câte picioare are o insectă?|Șase|Patru|Opt|Zece
+Ce animal își schimbă culoarea?|Cameleonul|Crocodilul|Șarpele|Ariciul
+Unde trăiește ursul polar?|La Polul Nord|În deșert|În junglă|La Polul Sud
+Unde trăiesc cei mai mulți pinguini?|Lângă Polul Sud|La Polul Nord|În pădure|În deșert
+Ce animal are cocoașă și trăiește în deșert?|Cămila|Zebra|Antilopa|Leul
+Ce păsări pleacă toamna în țările calde?|Rândunelele|Vrăbiile|Pițigoii|Găinile
+Ce mamifer poate zbura?|Liliacul|Iepurele|Șoarecele|Pinguinul
+Balena este un…|Mamifer|Pește|Amfibian|Crustaceu
+Șarpele este o…|Reptilă|Insectă|Pasăre|Rozătoare
+Broasca este un…|Amfibian|Mamifer|Pește|Melc
+Cum se numește casa albinelor?|Stup|Cuib|Vizuină|Bârlog
+Cum se numește casa vulpii?|Vizuină|Stup|Cuib|Coteț
+Cum se numește puiul calului?|Mânz|Vițel|Ied|Miel
+Cum se numește puiul oii?|Miel|Ied|Mânz|Purcel
+Cum se numește puiul caprei?|Ied|Miel|Vițel|Boboc
+Ce animal doarme cu capul în jos?|Liliacul|Bufnița|Veverița|Ariciul
+Ce pasăre vede bine noaptea?|Bufnița|Găina|Rândunica|Barza
+Ce animal din Australia își poartă puiul în marsupiu?|Cangurul|Tigrul|Ursul|Zebra
+Ce animal mănâncă bambus?|Ursul panda|Ursul polar|Lupul|Leul
+Câte brațe are o caracatiță?|Opt|Șase|Zece|Patru
+Din ce iese puiul de găină?|Din ou|Din sămânță|Din cuib|Din pământ
+Cum respiră peștii?|Prin branhii|Prin plămâni|Prin nas|Prin solzi
+Ce animale uriașe au trăit demult și au dispărut?|Dinozaurii|Elefanții|Crocodilii|Rechinii
+Ce pasăre își face cuibul pe stâlpi și pe acoperișuri?|Barza|Vrabia|Rața|Pițigoiul
+#Natură și știință
+Care este steaua cea mai apropiată de Pământ?|Soarele|Luna|Steaua Polară|Marte
+Câte planete are sistemul nostru solar?|Opt|Șapte|Cinci|Zece
+Care este cea mai mare planetă din sistemul solar?|Jupiter|Pământ|Marte|Venus
+Care planetă este numită „planeta roșie”?|Marte|Jupiter|Saturn|Venus
+Care planetă este cea mai aproape de Soare?|Mercur|Pământ|Neptun|Saturn
+Ce planetă are inele mari?|Saturn|Marte|Mercur|Pământ
+Ce se învârte în jurul Pământului?|Luna|Soarele|Marte|Saturn
+În cât timp înconjoară Pământul Soarele?|Într-un an|Într-o zi|Într-o lună|Într-o săptămână
+În cât timp se rotește Pământul o dată în jurul său?|Într-o zi|Într-un an|Într-o oră|Într-o lună
+La câte grade îngheață apa?|La 0 grade|La 10 grade|La 50 de grade|La 100 de grade
+La câte grade fierbe apa?|La 100 de grade|La 0 grade|La 20 de grade|La 50 de grade
+În ce se transformă apa când fierbe?|În abur|În gheață|În zăpadă|În nisip
+Ce gaz respirăm ca să trăim?|Oxigen|Fum|Abur|Heliu
+Ce produc copacii, de care avem nevoie ca să respirăm?|Oxigen|Fum|Praf|Ceață
+Ce parte a plantei trage apa din pământ?|Rădăcina|Floarea|Fructul|Frunza
+Ce se aude după fulger?|Tunetul|Ecoul|Vântul|Clopotul
+Din ce sunt făcuți norii?|Din picături mici de apă|Din vată|Din fum|Din praf
+Ce atrage un magnet?|Fierul|Lemnul|Hârtia|Sticla
+Ce forță ne ține pe Pământ?|Gravitația|Vântul|Lumina|Căldura
+Care sunt punctele cardinale?|Nord, sud, est, vest|Sus, jos, stânga, dreapta|Iarnă, vară, toamnă, primăvară|Zi, noapte, seară, dimineață
+În ce parte răsare soarele?|La est|La vest|La nord|La sud
+În ce parte apune soarele?|La vest|La est|La nord|La sud
+Ce instrument ne arată nordul?|Busola|Ceasul|Termometrul|Rigla
+Cu ce măsurăm temperatura?|Cu termometrul|Cu cântarul|Cu rigla|Cu ceasul
+Cu ce măsurăm greutatea?|Cu cântarul|Cu termometrul|Cu busola|Cu ceasul
+Cu ce măsurăm lungimea?|Cu rigla|Cu cântarul|Cu ceasul|Cu termometrul
+Ce este un vulcan?|Un munte din care iese lavă|Un râu foarte lung|Un vânt puternic|O pădure deasă
+Câte culori are curcubeul?|Șapte|Trei|Cinci|Zece
+Ce culoare obținem din galben și albastru?|Verde|Mov|Portocaliu|Maro
+Ce culoare obținem din roșu și galben?|Portocaliu|Verde|Mov|Albastru
+Ce culoare obținem din roșu și albastru?|Mov|Verde|Portocaliu|Galben
+În ce se transformă florile pomilor?|În fructe|În frunze|În rădăcini|În crengi
+Ce copac face ghinde?|Stejarul|Bradul|Nucul|Teiul
+Ce anotimp are lunile decembrie, ianuarie și februarie?|Iarna|Toamna|Primăvara|Vara
+Care sunt lunile de vară?|Iunie, iulie, august|Martie, aprilie, mai|Septembrie, octombrie, noiembrie|Decembrie, ianuarie, februarie
+#Corpul omului
+Ce organ pompează sângele în corp?|Inima|Plămânii|Stomacul|Creierul
+Cu ce organ respirăm?|Cu plămânii|Cu inima|Cu stomacul|Cu ficatul
+Ce organ ne ajută să gândim?|Creierul|Inima|Stomacul|Plămânii
+Câte simțuri are omul?|Cinci|Trei|Patru|Șapte
+Ce ține corpul nostru drept?|Scheletul|Pielea|Părul|Sângele
+Unde ajunge mâncarea după ce o înghițim?|În stomac|În plămâni|În inimă|În creier
+Cum se numesc primii dinți ai copilului?|Dinți de lapte|Dinți de fier|Dinți de apă|Dinți de zahăr
+Câți dinți are un om mare?|32|20|10|50
+Ce acoperă tot corpul nostru?|Pielea|Oasele|Mușchii|Sângele
+Ce ne ajută să mișcăm brațele și picioarele?|Mușchii|Părul|Unghiile|Dinții
+Ce vitamină luăm din lămâi și portocale?|Vitamina C|Vitamina D|Vitamina K|Vitamina E
+Ce ne ajută să fim sănătoși?|Mișcarea și somnul|Multe dulciuri|Statul la ecran|Culcatul târziu
+Ce simț folosește urechea?|Auzul|Văzul|Mirosul|Gustul
+Ce simț folosește pielea?|Pipăitul|Auzul|Văzul|Gustul
+Câte degete are un om la mâini și la picioare, în total?|Douăzeci|Zece|Cincisprezece|Douăzeci și cinci
+#Timpul
+Câte zile are un an obișnuit?|365|300|100|12
+Câte minute are o oră?|60|100|24|30
+Câte secunde are un minut?|60|10|100|24
+Câte ore are o zi întreagă, cu tot cu noapte?|24|12|60|10
+Care este cea mai scurtă lună a anului?|Februarie|Ianuarie|Iunie|Noiembrie
+Câte zile are februarie într-un an obișnuit?|28|30|31|25
+Câți ani are un secol?|100|10|50|1000
+Câte luni are un anotimp?|Trei|Două|Patru|Șase
+Cam câte săptămâni are o lună?|Patru|Două|Șapte|Zece
+Ce lună vine după martie?|Aprilie|Mai|Februarie|Iunie
+Ce lună vine înainte de septembrie?|August|Octombrie|Iulie|Iunie
+Care sunt zilele de weekend?|Sâmbătă și duminică|Luni și marți|Joi și vineri|Miercuri și joi
+Câte minute are o jumătate de oră?|30|15|60|20
+Ce zi este între marți și joi?|Miercuri|Luni|Vineri|Sâmbătă
+În ce zi sărbătorim Anul Nou?|1 ianuarie|25 decembrie|1 martie|1 iunie
+#Moldova și lumea
+Ce râu trece prin Chișinău?|Bîc|Nistru|Prut|Dunărea
+Ce râu desparte Moldova de România?|Prut|Nistru|Bîc|Răut
+Cine a fost Ștefan cel Mare?|Domnitor al Moldovei|Scriitor|Pictor|Cântăreț
+Cine a scris poezia „Luceafărul”?|Mihai Eminescu|Ion Creangă|Grigore Vieru|Spiridon Vangheli
+Cine a scris „Amintiri din copilărie”?|Ion Creangă|Mihai Eminescu|Grigore Vieru|Spiridon Vangheli
+Cine a scris cărțile despre Guguță?|Spiridon Vangheli|Ion Creangă|Mihai Eminescu|Ion Druță
+Ce poet din Moldova a scris multe poezii despre mama?|Grigore Vieru|Ion Creangă|Spiridon Vangheli|Ion Druță
+Ce sărbătorim în Moldova la 27 august?|Ziua Independenței|Ziua Copilului|Crăciunul|Mărțișorul
+Ce sărbătorim la 31 august?|Ziua Limbii Române|Anul Nou|Ziua Mamei|Ziua Copilului
+Ce animal este pe scutul de pe stema Moldovei?|Bourul|Leul|Ursul|Lupul
+Ce pasăre este pe stema Moldovei?|Acvila|Barza|Rândunica|Lebăda
+Ce oraș este numit „capitala de nord” a Moldovei?|Bălți|Cahul|Soroca|Ungheni
+În ce oraș este o cetate veche, rotundă, pe malul Nistrului?|Soroca|Cahul|Bălți|Ungheni
+Care țări sunt vecine cu Moldova?|România și Ucraina|Franța și Italia|Rusia și Polonia|Bulgaria și Grecia
+Pe ce continent se află Moldova?|Europa|Asia|Africa|America
+Care dintre acestea este un continent?|Africa|Franța|Chișinău|Dunărea
+Care este cel mai mare ocean?|Oceanul Pacific|Oceanul Atlantic|Oceanul Indian|Oceanul Arctic
+Care este cel mai înalt munte din lume?|Everest|Mont Blanc|Kilimanjaro|Moldoveanu
+Pe ce continent este deșertul Sahara?|Africa|Europa|Asia|Australia
+Care este capitala României?|București|Iași|Cluj|Chișinău
+Care este capitala Franței?|Paris|Londra|Roma|Berlin
+Care este capitala Italiei?|Roma|Paris|Madrid|Atena
+Care este capitala Ucrainei?|Kiev|Odesa|Varșovia|Minsk
+În ce țară se află Turnul Eiffel?|Franța|Italia|Spania|Germania
+În ce țară sunt piramidele vestite?|Egipt|Grecia|China|India
+În ce țară este Marele Zid?|China|Japonia|India|Egipt
+Care este cel mai rece continent?|Antarctica|Europa|Africa|Asia
+Care este cel mai mare continent?|Asia|Europa|Africa|Australia
+În ce mare se varsă Dunărea?|Marea Neagră|Marea Roșie|Marea Baltică|Marea Mediterană
+Ce limbă se vorbește în Franța?|Franceza|Engleza|Italiana|Germana
+Ce limbă se vorbește în Anglia?|Engleza|Franceza|Spaniola|Rusa
+Cum se numește harta rotundă a Pământului?|Glob|Atlas|Busolă|Calendar
+Ce culoare are apa pe hartă?|Albastru|Verde|Maro|Galben
+#Oameni și lucruri
+Din ce se face hârtia?|Din lemn|Din piatră|Din nisip|Din lână
+Din ce se face sticla?|Din nisip|Din lemn|Din apă|Din fier
+Din ce se face făina?|Din grâu|Din struguri|Din lapte|Din mere
+Din ce fruct se fac stafidele?|Din struguri|Din prune|Din mere|Din cireșe
+Din ce se face ciocolata?|Din cacao|Din cafea|Din nuci|Din miere
+Din ce se face untul?|Din lapte|Din făină|Din ouă|Din grâu
+Din ce plantă se face uleiul în Moldova?|Din floarea-soarelui|Din grâu|Din trandafir|Din varză
+Cine zboară în cosmos?|Cosmonautul|Marinarul|Șoferul|Minerul
+Cine a fost primul om în cosmos?|Iuri Gagarin|Neil Armstrong|Ștefan cel Mare|Cristofor Columb
+Unde a pășit omul pentru prima dată în anul 1969?|Pe Lună|Pe Marte|Pe Soare|Pe Venus
+Cine are grijă de animalele bolnave?|Veterinarul|Dentistul|Brutarul|Poștașul
+Cine scrie cărți?|Scriitorul|Pictorul|Actorul|Croitorul
+Cine pictează tablouri?|Pictorul|Sculptorul|Scriitorul|Dirijorul
+Cine conduce o orchestră?|Dirijorul|Pictorul|Actorul|Arbitrul
+Cine face haine?|Croitorul|Cizmarul|Tâmplarul|Brutarul
+Cine face mobilă din lemn?|Tâmplarul|Croitorul|Fierarul|Olarul
+Cine repară încălțămintea?|Cizmarul|Croitorul|Ceasornicarul|Tâmplarul
+Câte coarde are o vioară?|Patru|Șase|Trei|Zece
+Ce instrument are clape albe și negre?|Pianul|Vioara|Toba|Naiul
+În ce instrument se suflă?|În fluier|În vioară|În tobă|În chitară
+Câți jucători are pe teren o echipă de fotbal?|11|5|7|15
+În ce sport se folosește racheta?|Tenis|Fotbal|Înot|Box
+Ce culoare are semaforul la mijloc?|Galben|Roșu|Verde|Albastru
+Ce înseamnă culoarea galbenă a semaforului?|Atenție, pregătește-te|Mergi repede|Stai jos|Întoarce-te
+Ce facem cu gunoiul?|Îl aruncăm la coș|Îl aruncăm pe jos|Îl lăsăm în parc|Îl aruncăm în râu
+De ce stingem lumina când ieșim din cameră?|Ca să economisim energie|Ca să fie frig|Ca să ne jucăm|Ca să se strice becul
+Ce înseamnă a recicla?|A folosi din nou materialele|A arunca totul|A arde gunoiul|A cumpăra lucruri noi
+Ce folosim ca să vorbim cu cineva aflat departe?|Telefonul|Busola|Termometrul|Lanterna
+#Numere și forme
+Câte laturi are un dreptunghi?|Patru|Trei|Cinci|Șase
+Câte fețe are un cub?|Șase|Patru|Opt|Zece
+Cât fac 7 + 8?|15|14|16|13
+Cât fac 20 − 6?|14|16|13|12
+Cât fac 2 × 5?|10|7|25|12
+Cât fac 3 × 3?|9|6|12|33
+Cât este jumătate din 10?|5|2|20|4
+Cât este dublul lui 6?|12|3|8|66
+Câte zeci are numărul 40?|Patru|Zero|Patruzeci|Două
+Care număr este par?|8|5|7|11
+Care număr este impar?|9|4|6|10
+Ce număr vine după 99?|100|98|90|1000
+Câți centimetri are un metru?|100|10|1000|60
+Câte grame are un kilogram?|1000|100|10|500
+Câți bani are un leu?|100 de bani|10 bani|50 de bani|1000 de bani
+Câte luni sunt într-o jumătate de an?|Șase|Trei|Patru|Douăsprezece
+Câte ouă sunt într-o duzină?|12|10|6|20
+Care număr este cel mai mic?|17|71|27|70
+Ce formă are un ou?|Ovală|Pătrată|Triunghiulară|Dreptunghiulară
+#Cuvinte și povești
+Câte litere are alfabetul limbii române?|31|26|33|28
+Care dintre aceste litere este vocală?|E|B|M|T
+Care dintre aceste litere este consoană?|R|A|I|U
+Ce semn punem la sfârșitul unei întrebări?|Semnul întrebării|Punctul|Virgula|Linia
+Cu ce fel de literă începe o propoziție?|Cu literă mare|Cu literă mică|Cu cifră|Cu virgulă
+Cum scriem numele oamenilor?|Cu literă mare la început|Numai cu litere mici|Cu cifre|Cu virgulă la început
+Care cuvânt are același înțeles cu „zăpadă”?|Nea|Ploaie|Gheață|Ceață
+Care cuvânt are același înțeles cu „bucuros”?|Vesel|Trist|Obosit|Supărat
+Care cuvânt are același înțeles cu „copac”?|Arbore|Floare|Iarbă|Frunză
+Care este opusul cuvântului „harnic”?|Leneș|Bun|Isteț|Curajos
+Care este opusul cuvântului „vesel”?|Trist|Bucuros|Zglobiu|Cuminte
+Care este opusul cuvântului „a începe”?|A termina|A porni|A merge|A citi
+Câte silabe are cuvântul „co-pi-lul”?|Trei|Două|Patru|Una
+Care este pluralul cuvântului „copil”?|Copii|Copilul|Copilaș|Copilărie
+Care cuvânt este scris corect?|Întrebare|Intrebarre|Întrebbare|Îtrebare
+Cine a scris povestea „Capra cu trei iezi”?|Ion Creangă|Mihai Eminescu|Frații Grimm|Hans Christian Andersen
+Cine a scris povestea „Punguța cu doi bani”?|Ion Creangă|Petre Ispirescu|Grigore Vieru|Charles Perrault
+Cine a scris povestea „Rățușca cea urâtă”?|Hans Christian Andersen|Ion Creangă|Frații Grimm|Mihai Eminescu
+În ce se transformă rățușca cea urâtă?|Într-o lebădă|Într-un vultur|Într-o barză|Într-un păun
+Cine l-a făcut pe Pinocchio din lemn?|Geppetto|Păcală|Moș Crăciun|Aladin
+Ce găsește Aladin în peșteră?|O lampă fermecată|O sabie|O coroană|Un cal alb
+Cine este Făt-Frumos în povești?|Un erou viteaz|Un zmeu|Un pitic|Un împărat bătrân
+Cine este de obicei dușmanul lui Făt-Frumos?|Zmeul|Iepurele|Albina|Morarul
+Cum încep de obicei poveștile?|A fost odată ca niciodată|La revedere|Și-am încălecat pe-o șa|Bună dimineața
+Cum se numește omul care scrie poezii?|Poet|Pictor|Actor|Sculptor
+Ce este un dicționar?|O carte care explică cuvintele|O carte cu povești|O carte de bucate|Un caiet de desen
+Cum se numește cartea din care învățăm literele?|Abecedar|Atlas|Dicționar|Calendar
+`;
+
+const L3 = `
+#Cosmos
+Cine a fost primul om care a pășit pe Lună?|Neil Armstrong|Iuri Gagarin|Buzz Aldrin|Cristofor Columb
+În ce an a ajuns omul pe Lună?|1969|1945|1989|2001
+În ce an a zburat Iuri Gagarin în cosmos?|1961|1957|1969|1975
+Cum se numea câinele trimis în cosmos în anul 1957?|Laika|Lassie|Rex|Azor
+Care este cea mai fierbinte planetă din sistemul solar?|Venus|Mercur|Marte|Jupiter
+Care este cea mai mică planetă din sistemul solar?|Mercur|Marte|Venus|Neptun
+Care planetă este cea mai departe de Soare?|Neptun|Uranus|Saturn|Jupiter
+A câta planetă de la Soare este Pământul?|A treia|Prima|A doua|A cincea
+Cum se numește galaxia noastră?|Calea Lactee|Andromeda|Orion|Ursa Mare
+Câți sateliți naturali are Pământul?|Unul|Doi|Niciunul|Patru
+Ce este Soarele?|O stea|O planetă|Un satelit|O cometă
+Cât face lumina de la Soare până la Pământ?|Aproximativ 8 minute|O secundă|O oră|O zi
+Cu ce aparat privim stelele și planetele?|Cu telescopul|Cu microscopul|Cu periscopul|Cu termometrul
+Ce este o cometă?|Un corp de gheață și praf, cu coadă luminoasă|O stea foarte mică|O planetă fără aer|Un nor de pe Pământ
+Unde trăiesc și lucrează astronauții în cosmos?|Pe Stația Spațială Internațională|Pe Stația Polară|Pe planeta Marte|Pe Soare
+De ce avem zi și noapte?|Pământul se rotește în jurul său|Luna acoperă Soarele|Norii ascund Soarele|Soarele se învârte în jurul Pământului
+Ce se întâmplă la o eclipsă de Soare?|Luna acoperă Soarele|Soarele se stinge|Pământul acoperă Luna|Norii acoperă Soarele
+Ce corp ceresc nu mai este numit planetă din anul 2006?|Pluto|Neptun|Uranus|Mercur
+#Știință și tehnică
+Cine a inventat becul electric?|Thomas Edison|Albert Einstein|Isaac Newton|Leonardo da Vinci
+Cine a inventat telefonul?|Alexander Graham Bell|Thomas Edison|Nikola Tesla|Galileo Galilei
+Cine a descoperit legea gravitației?|Isaac Newton|Albert Einstein|Charles Darwin|Louis Pasteur
+Cine au construit primul avion cu motor?|Frații Wright|Frații Grimm|Frații Lumière|Frații Montgolfier
+Cine a inventat tiparul în Europa?|Johannes Gutenberg|Leonardo da Vinci|Cristofor Columb|Marco Polo
+Ce inginer român a construit primul avion cu reacție?|Henri Coandă|Aurel Vlaicu|Traian Vuia|Petrache Poenaru
+Ce român a inventat stiloul?|Petrache Poenaru|Henri Coandă|Aurel Vlaicu|Traian Vuia
+Cine a construit primul automobil cu motor pe benzină?|Karl Benz|Henry Ford|Thomas Edison|Enzo Ferrari
+Care este cel mai dur material din natură?|Diamantul|Fierul|Aurul|Granitul
+Ce metal este lichid la temperatura camerei?|Mercurul|Fierul|Aurul|Argintul
+Care este formula apei?|H2O|CO2|O2|NaCl
+Ce gaz dăm afară când expirăm?|Dioxid de carbon|Oxigen|Heliu|Hidrogen
+Care sunt cele trei stări ale apei?|Solidă, lichidă, gazoasă|Rece, caldă, fierbinte|Dulce, sărată, acră|Mică, mare, uriașă
+Ce merge cel mai repede?|Lumina|Sunetul|Avionul|Glonțul
+Ce energie folosesc panourile solare?|Lumina Soarelui|Vântul|Apa|Cărbunele
+Ce produce o turbină eoliană?|Electricitate din vânt|Vânt din electricitate|Apă caldă|Benzină
+Din ce se face benzina?|Din petrol|Din cărbune|Din apă|Din lemn
+Cu ce aparat vedem lucruri foarte mici?|Cu microscopul|Cu telescopul|Cu binoclul|Cu busola
+Ce este „creierul” unui calculator?|Procesorul|Tastatura|Monitorul|Mouse-ul
+Ce este un robot?|O mașină care lucrează după un program|Un om foarte puternic|O jucărie din lemn|Un animal din metal
+Ce este internetul?|O rețea care leagă calculatoare din toată lumea|Un calculator foarte mare|Un joc video|Un post de televiziune
+Cum se numesc urmele de animale și plante păstrate în piatră?|Fosile|Minerale|Cristale|Meteoriți
+Care este cel mai ușor gaz?|Hidrogenul|Oxigenul|Azotul|Dioxidul de carbon
+Ce gaz se găsește cel mai mult în aer?|Azot|Oxigen|Dioxid de carbon|Hidrogen
+Cum se numește omul de știință care studiază stelele?|Astronom|Geolog|Biolog|Arheolog
+Cum se numește omul de știință care caută în pământ urme ale trecutului?|Arheolog|Astronom|Chimist|Meteorolog
+Cum se numește mișcarea puternică a scoarței Pământului?|Cutremur|Taifun|Avalanșă|Eclipsă
+Ce este un tsunami?|Un val uriaș pe mare|Un vânt fierbinte|Un vulcan stins|O ploaie cu gheață
+În ce se măsoară viteza unei mașini?|În kilometri pe oră|În kilograme|În litri|În grade
+Câți metri are un kilometru?|1000|100|10|10 000
+Câte kilograme are o tonă?|1000|100|10|500
+Ce fel de motor au mașinile electrice?|Motor alimentat de baterie|Motor cu benzină|Motor cu abur|Motor cu cărbune
+Ce vehicul zboară cu o elice mare deasupra?|Elicopterul|Avionul|Planorul|Racheta
+Ce vehicul merge pe sub apă?|Submarinul|Vaporul|Barca cu pânze|Hidroavionul
+Ce vehicul duce astronauții în cosmos?|Racheta|Elicopterul|Avionul de pasageri|Balonul
+Ce arată vitezometrul unei mașini?|Viteza|Cantitatea de benzină|Temperatura de afară|Ora
+#Animale și dinozauri
+Care a fost unul dintre cei mai mari dinozauri carnivori?|Tyrannosaurus rex|Triceratops|Stegosaurus|Diplodocus
+Ce dinozaur avea trei coarne?|Triceratops|Tyrannosaurus rex|Velociraptor|Diplodocus
+Ce dinozaur avea plăci pe spate și țepi pe coadă?|Stegosaurus|Triceratops|Tyrannosaurus rex|Brachiosaurus
+Ce mâncau dinozaurii cu gât lung, ca Diplodocus?|Plante|Carne|Pești|Insecte
+Acum cât timp au dispărut dinozaurii?|Acum aproximativ 66 de milioane de ani|Acum 1000 de ani|Acum 100 000 de ani|Acum un milion de ani
+Ce cred oamenii de știință că a dus la dispariția dinozaurilor?|Un asteroid uriaș|O ploaie lungă|Vânătorii|Un incendiu de pădure
+Care este cel mai mare animal de pe Pământ?|Balena albastră|Elefantul african|Rechinul alb|Girafa
+Care este cea mai rapidă pasăre din lume?|Șoimul călător|Vulturul|Rândunica|Struțul
+Care este cel mai mare pește?|Rechinul-balenă|Rechinul alb|Somnul|Știuca
+Delfinul este un…|Mamifer|Pește|Amfibian|Crustaceu
+Care este cea mai mare felină?|Tigrul|Leul|Leopardul|Ghepardul
+Care este cea mai mare șopârlă din lume?|Dragonul de Komodo|Iguana|Cameleonul|Gușterul
+Câte inimi are o caracatiță?|Trei|Una|Două|Opt
+Ce animal poate sta mult timp fără apă?|Cămila|Calul|Vaca|Câinele
+Care este cel mai mare urs?|Ursul polar|Ursul brun|Ursul panda|Ursul negru
+Ce pasăre poate zbura și înapoi?|Colibri|Vrabia|Vulturul|Barza
+Cum se numesc animalele active noaptea?|Nocturne|Diurne|Domestice|Migratoare
+Cum se numesc animalele care mănâncă și plante, și carne?|Omnivore|Erbivore|Carnivore|Insectivore
+Ce animal construiește baraje pe râuri?|Castorul|Vidra|Bursucul|Ariciul
+Care este cea mai mare maimuță?|Gorila|Cimpanzeul|Urangutanul|Babuinul
+Care dintre aceste animale trăiește cel mai mult?|Broasca țestoasă uriașă|Elefantul|Calul|Câinele
+Cum se orientează liliecii în întuneric?|Cu ajutorul ecoului|Cu ochii|Cu mirosul|Cu mustățile
+#Geografie
+Care este cel mai lung fluviu din Europa?|Volga|Dunărea|Nistru|Rin
+Care este cea mai mare țară din lume?|Rusia|China|Canada|Brazilia
+Care este cea mai mică țară din lume?|Vatican|Monaco|Malta|Luxemburg
+Care este capitala Germaniei?|Berlin|München|Viena|Hamburg
+Care este capitala Spaniei?|Madrid|Barcelona|Lisabona|Roma
+Care este capitala Marii Britanii?|Londra|Paris|Dublin|Manchester
+Care este capitala Rusiei?|Moscova|Sankt Petersburg|Kiev|Minsk
+Care este capitala Statelor Unite ale Americii?|Washington|New York|Los Angeles|Chicago
+Care este capitala Japoniei?|Tokio|Beijing|Seul|Osaka
+Care este capitala Chinei?|Beijing|Shanghai|Tokio|Seul
+Care este capitala Turciei?|Ankara|Istanbul|Atena|Sofia
+Care este capitala Poloniei?|Varșovia|Praga|Cracovia|Budapesta
+Care este capitala Greciei?|Atena|Roma|Sofia|Ankara
+Care este cel mai mare deșert fierbinte din lume?|Sahara|Gobi|Kalahari|Atacama
+Care este cea mai mare pădure tropicală din lume?|Amazonia|Codrii Moldovei|Taigaua|Pădurea Neagră
+Pe ce continent se află Brazilia?|America de Sud|Africa|Europa|Asia
+Pe ce continent se află Egiptul?|Africa|Asia|Europa|America de Sud
+Pe ce continent trăiesc cangurii?|Australia|Africa|Asia|America de Nord
+Ce ocean se află între Europa și America?|Oceanul Atlantic|Oceanul Pacific|Oceanul Indian|Oceanul Arctic
+Care este cel mai înalt vârf din România?|Moldoveanu|Omu|Negoiu|Ceahlău
+Cum se numește zona cu cele mai mari păduri din Moldova?|Codrii|Bugeac|Taiga|Deltă
+În ce țară formează Dunărea o deltă, înainte de a se vărsa în mare?|România|Germania|Austria|Ungaria
+Prin câte țări trece Dunărea?|Zece|Două|Cinci|Douăzeci
+Cum se numește portul Moldovei de la Dunăre?|Giurgiulești|Cahul|Soroca|Ungheni
+În ce mare se varsă Nistrul?|Marea Neagră|Marea Baltică|Marea Caspică|Marea Mediterană
+Cum se numește linia imaginară care împarte Pământul în nord și sud?|Ecuator|Meridian|Tropic|Pol
+Ce monedă se folosește în multe țări din Europa?|Euro|Dolar|Liră|Rublă
+În ce țară este orașul Veneția, cu canale în loc de străzi?|Italia|Franța|Spania|Grecia
+În ce oraș se află ceasul Big Ben?|Londra|Paris|Berlin|Roma
+În ce țară se află Statuia Libertății?|Statele Unite ale Americii|Franța|Canada|Anglia
+Ce țară are forma unei cizme?|Italia|Spania|Grecia|Portugalia
+#Istorie
+Cine a descoperit America?|Cristofor Columb|Marco Polo|Fernando Magellan|Vasco da Gama
+În ce an a ajuns Columb în America?|1492|1392|1592|1692
+Ce navigator a condus prima călătorie în jurul lumii?|Fernando Magellan|Cristofor Columb|Marco Polo|James Cook
+Cine au construit piramidele?|Egiptenii antici|Romanii|Grecii|Vikingii
+Cum se numeau regii Egiptului antic?|Faraoni|Împărați|Sultani|Țari
+Cine erau gladiatorii?|Luptători din Roma antică|Marinari greci|Regi egipteni|Cavaleri medievali
+Cine erau vikingii?|Navigatori și războinici din nordul Europei|Luptători japonezi|Soldați romani|Păstori din munți
+Cum se numeau războinicii din Japonia veche?|Samurai|Cavaleri|Gladiatori|Vikingi
+Unde locuiau regii și cavalerii în Evul Mediu?|În castele|În piramide|În blocuri|În corturi
+Între ce ani a domnit Ștefan cel Mare?|1457–1504|1359–1400|1600–1650|1812–1859
+Câți ani a domnit Ștefan cel Mare?|47 de ani|10 ani|25 de ani|70 de ani
+Care a fost capitala Moldovei în timpul lui Ștefan cel Mare?|Suceava|Chișinău|Iași|București
+Cine a întemeiat Moldova, potrivit legendei, venind din Maramureș?|Dragoș Vodă|Ștefan cel Mare|Mihai Viteazul|Decebal
+Cine a fost regele dacilor care a luptat cu romanii?|Decebal|Traian|Cezar|Ștefan cel Mare
+Ce împărat roman a cucerit Dacia?|Traian|Cezar|Nero|Decebal
+În ce an și-a declarat Republica Moldova independența?|1991|1918|1945|2001
+Cine a pictat „Mona Lisa”?|Leonardo da Vinci|Pablo Picasso|Michelangelo|Vincent van Gogh
+Unde au avut loc primele Jocuri Olimpice, în Antichitate?|În Grecia|În Italia|În Egipt|În China
+Ce au inventat chinezii în vechime?|Hârtia și praful de pușcă|Telefonul|Automobilul|Becul
+Cum se numesc cifrele 1, 2, 3, pe care le folosim azi?|Cifre arabe|Cifre romane|Cifre grecești|Cifre chinezești
+Cât este X în cifre romane?|10|5|50|100
+Cât este V în cifre romane?|5|10|1|50
+Cum se numea vaporul uriaș care s-a scufundat în 1912?|Titanic|Santa Maria|Bismarck|Aurora
+#Sport
+O dată la câți ani au loc Jocurile Olimpice de vară?|La patru ani|La doi ani|În fiecare an|La zece ani
+Câte cercuri are steagul olimpic?|Cinci|Trei|Patru|Șapte
+Ce medalie primește câștigătorul la Olimpiadă?|De aur|De argint|De bronz|De platină
+Câte minute durează un meci de fotbal, fără prelungiri?|90|60|45|120
+Câți jucători are pe teren o echipă de baschet?|Cinci|Șase|Șapte|Unsprezece
+Câți jucători are pe teren o echipă de volei?|Șase|Cinci|Șapte|Nouă
+Ce cartonaș arată arbitrul când elimină un jucător?|Roșu|Galben|Verde|Albastru
+O dată la câți ani are loc Campionatul Mondial de Fotbal?|La patru ani|La doi ani|În fiecare an|La cinci ani
+Ce țară a câștigat de cele mai multe ori Campionatul Mondial de Fotbal?|Brazilia|Germania|Italia|Argentina
+Ce țară a câștigat Campionatul Mondial de Fotbal din 2022?|Argentina|Franța|Brazilia|Croația
+În ce sport se aruncă mingea la coș?|Baschet|Handbal|Volei|Rugby
+În ce sport se joacă cu pucul pe gheață?|Hochei|Patinaj|Curling|Schi
+Cum se numește cursa de alergare de aproximativ 42 de kilometri?|Maraton|Sprint|Ștafetă|Triatlon
+Câte pătrate are o tablă de șah?|64|32|100|48
+Ce piesă de șah se mișcă în formă de L?|Calul|Nebunul|Turnul|Regina
+Cum se numește mutarea care încheie o partidă de șah?|Șah mat|Rocadă|Remiză|Gambit
+Ce sporturi are triatlonul?|Înot, ciclism, alergare|Fotbal, baschet, volei|Box, lupte, judo|Schi, patinaj, hochei
+În ce sport se luptă cu mănuși, în ring?|Box|Judo|Tenis|Scrimă
+Ce culoare are centura celor mai buni la judo și karate?|Neagră|Albă|Galbenă|Verde
+Cum se numesc cursele celor mai rapide mașini din lume?|Formula 1|Turul Franței|Maraton|Regată
+Ce este Turul Franței?|O cursă de ciclism|O cursă de mașini|Un turneu de tenis|Un maraton
+Cu ce se joacă tenisul de masă?|Cu palete și o minge mică|Cu rachete și fluturaș|Cu crose|Cu bâte
+#Matematică și logică
+Cât fac 7 × 8?|56|54|48|64
+Cât fac 9 × 6?|54|56|45|63
+Cât fac 100 : 4?|25|20|40|50
+Cât fac 125 + 75?|200|190|210|175
+Cât fac 1000 − 250?|750|850|650|700
+Cât fac 5 × 5 × 2?|50|25|20|100
+Cât este un sfert din 100?|25|50|20|4
+Cât este jumătate dintr-o jumătate?|Un sfert|O treime|O jumătate|Un întreg
+Câte minute sunt în două ore?|120|100|60|200
+Câte secunde are o oră?|3600|600|360|1000
+Câte zile are un an bisect?|366|365|364|360
+Câți ani are un deceniu?|Zece|Cinci|O sută|O mie
+Câți ani are un mileniu?|O mie|O sută|Zece|Un milion
+Câte zerouri are un milion?|Șase|Trei|Patru|Nouă
+Câte laturi are un hexagon?|Șase|Cinci|Opt|Șapte
+Câte laturi are un pentagon?|Cinci|Șase|Patru|Opt
+Câte grade are un unghi drept?|90|45|180|100
+Ce număr urmează: 2, 4, 8, 16, …?|32|18|24|20
+Ce număr urmează: 5, 10, 15, 20, …?|25|30|22|21
+Care număr este cel mai mare?|1100|1010|1001|999
+Un tren pleacă la 9:00 și ajunge la 11:30. Cât durează drumul?|Două ore și jumătate|Două ore|Trei ore|O oră și jumătate
+Ai 50 de lei și cumperi o carte de 35 de lei. Cât îți rămâne?|15 lei|25 de lei|10 lei|20 de lei
+Ce formă are un zar?|Cub|Sferă|Cilindru|Con
+Ce formă are o cutie de conserve?|Cilindru|Cub|Con|Piramidă
+#Cuvinte și cărți
+Ce parte de vorbire arată o acțiune?|Verbul|Substantivul|Adjectivul|Numeralul
+Ce parte de vorbire denumește ființe și lucruri?|Substantivul|Verbul|Adjectivul|Numeralul
+Ce parte de vorbire arată o însușire?|Adjectivul|Verbul|Substantivul|Pronumele
+Care cuvânt este verb?|A alerga|Minge|Rapid|Stadion
+Care cuvânt este adjectiv?|Curajos|Curaj|A lupta|Erou
+Cum se numesc cuvintele cu același înțeles?|Sinonime|Antonime|Rime|Silabe
+Cum se numesc cuvintele cu înțeles opus?|Antonime|Sinonime|Diminutive|Vocale
+Care este sinonimul cuvântului „viteaz”?|Curajos|Fricos|Leneș|Supărat
+Care este antonimul cuvântului „prieten”?|Dușman|Coleg|Vecin|Frate
+Ce înseamnă „a o lua la sănătoasa”?|A fugi|A se face bine|A mânca sănătos|A dormi
+Ce înseamnă „a tăia frunze la câini”?|A pierde vremea|A munci mult|A hrăni câinii|A curăța grădina
+Ce înseamnă „a fi cu capul în nori”?|A fi neatent|A fi foarte înalt|A zbura cu avionul|A fi supărat
+Câte silabe are cuvântul „cal-cu-la-tor”?|Patru|Trei|Cinci|Două
+Care cuvânt este scris corect?|Întotdeauna|Întodeauna|Întotdeuna|Întotdiauna
+Ce este o fabulă?|O poveste scurtă cu animale și o învățătură|O poezie de dragoste|O carte de istorie|Un cântec de leagăn
+Ce este o legendă?|O poveste despre cum a apărut ceva|O rețetă|O știre|O scrisoare
+Cine a scris „Aventurile lui Tom Sawyer”?|Mark Twain|Jules Verne|Daniel Defoe|Ion Creangă
+Cine a scris „Ocolul Pământului în 80 de zile”?|Jules Verne|Mark Twain|Hans Christian Andersen|Rudyard Kipling
+Cine a scris „Cartea junglei”?|Rudyard Kipling|Jules Verne|Mark Twain|Daniel Defoe
+Cine a scris „Robinson Crusoe”?|Daniel Defoe|Jules Verne|Mark Twain|Rudyard Kipling
+Cum se numește băiatul crescut de lupi în „Cartea junglei”?|Mowgli|Tarzan|Peter Pan|Tom
+Unde a trăit Robinson Crusoe mulți ani?|Pe o insulă pustie|Într-un castel|Pe un vapor|Într-o peșteră din munți
+Cine a scris „Povestea lui Harap-Alb”?|Ion Creangă|Mihai Eminescu|Petre Ispirescu|Ioan Slavici
+Cine a scris poezia „Somnoroase păsărele”?|Mihai Eminescu|Grigore Vieru|George Coșbuc|Vasile Alecsandri
+Cum se numește imnul Republicii Moldova?|„Limba noastră”|„Hora Unirii”|„Luceafărul”|„Miorița”
+Cine a scris versurile imnului „Limba noastră”?|Alexei Mateevici|Grigore Vieru|Mihai Eminescu|Ion Creangă
+#Corpul omului
+Câte oase are un om adult?|206|106|306|56
+Care este cel mai lung os din corp?|Femurul|Coasta|Craniul|Clavicula
+Care este cel mai mare organ al corpului?|Pielea|Inima|Ficatul|Creierul
+Ce os protejează creierul?|Craniul|Coastele|Femurul|Bazinul
+Ce oase protejează inima și plămânii?|Coastele|Craniul|Femurul|Genunchii
+Prin ce circulă sângele?|Prin vase de sânge|Prin oase|Prin nervi|Prin unghii
+Ce organe curăță sângele?|Rinichii|Plămânii|Mușchii|Ochii
+De ce avem nevoie de calciu?|Pentru oase și dinți tari|Pentru păr lung|Pentru ochi albaștri|Pentru somn
+Ce face inima când alergăm?|Bate mai repede|Bate mai rar|Se oprește|Nu se schimbă
+Câtă apă este în corpul omului?|Mai mult de jumătate|Foarte puțină|Deloc|Un pahar
+Ce sunt microbii?|Ființe foarte mici, care pot aduce boli|Insecte mari|Vitamine|Medicamente
+Ce ne apără de unele boli grave?|Vaccinul|Ciocolata|Frigul|Zgomotul
+`;
+
+function parse(src){
+  const out=[];let cat="";
+  src.trim().split("\n").forEach(line=>{
+    line=line.trim();if(!line)return;
+    if(line[0]==="#"){cat=line.slice(1);return;}
+    const p=line.split("|");
+    out.push({id:out.length,cat,q:p[0],ok:p[1],opts:p.slice(1,5)});
+  });
+  return out;
+}
+const BANK={1:parse(L1),2:parse(L2),3:parse(L3)};
+const $=id=>document.getElementById(id);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+};
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+let level=store.get("cs-level",1), size=store.get("cs-size",10), caps=store.get("cs-caps",false);
+let seen={1:store.get("cs-seen-1",[]),2:store.get("cs-seen-2",[]),3:store.get("cs-seen-3",[])};
+if(![1,2,3].includes(level))level=1;
+let test=[],pos=0,score=0,wrong=[];
+
+function show(id){["home","quiz","end"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);}
+
+function paintHome(){
+  [1,2,3].forEach(n=>{$("lvl"+n).setAttribute("aria-pressed",level===n);$("c"+n).textContent=BANK[n].length+" întrebări";});
+  document.querySelectorAll("[data-n]").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.n)===size));
+  $("caps").setAttribute("aria-pressed",caps);
+  document.body.classList.toggle("caps",caps);
+  const n=BANK[level].length, s=Math.min(seen[level].length,n);
+  $("bank").textContent="Nivelul "+level+": ai răspuns corect la "+s+" din "+n+" întrebări. Întrebările greșite revin în testele următoare.";
+}
+
+/* Întrebările la care s-a răspuns corect nu se repetă până nu se termină toată baza. */
+function buildTest(){
+  const all=BANK[level];
+  let fresh=all.filter(x=>!seen[level].includes(x.id));
+  if(fresh.length<size){
+    seen[level]=[];store.set("cs-seen-"+level,[]);
+    const ids=new Set(fresh.map(x=>x.id));
+    fresh=fresh.concat(shuffle(all.filter(x=>!ids.has(x.id))).slice(0,size-fresh.length));
+  }
+  /* amestec pe categorii, ca testul să fie variat */
+  const byCat={};shuffle(fresh).forEach(x=>(byCat[x.cat]=byCat[x.cat]||[]).push(x));
+  const cats=shuffle(Object.keys(byCat));const pick=[];
+  while(pick.length<size){
+    let added=false;
+    for(const c of cats){if(byCat[c].length&&pick.length<size){pick.push(byCat[c].pop());added=true;}}
+    if(!added)break;
+  }
+  return shuffle(pick);
+}
+
+function startTest(){
+  test=buildTest();pos=0;score=0;wrong=[];
+  show("quiz");paintQuestion();
+}
+
+function paintQuestion(){
+  const item=test[pos];
+  $("count").textContent="Întrebarea "+(pos+1)+" din "+test.length;
+  $("prog").style.width=(pos/test.length*100)+"%";
+  $("cat").textContent=item.cat;
+  $("q").textContent=item.q;
+  $("say").textContent="";$("say").className="say read";
+  $("next").hidden=true;
+  const box=$("answers");box.textContent="";
+  shuffle(item.opts).forEach((txt,i)=>{
+    const b=document.createElement("button");
+    b.type="button";b.className="ans";
+    const k=document.createElement("span");k.className="k";k.textContent="ABCD"[i];
+    const t=document.createElement("span");t.className="read";t.textContent=txt;
+    b.append(k,t);
+    b.addEventListener("click",()=>answer(b,txt));
+    box.appendChild(b);
+  });
+}
+
+function answer(btn,txt){
+  const item=test[pos];
+  const right=txt===item.ok;
+  document.querySelectorAll(".ans").forEach(b=>{
+    b.disabled=true;
+    if(b.lastChild.textContent===item.ok)b.classList.add("ok");
+  });
+  const say=$("say");
+  if(right){
+    score++;say.textContent="Corect!";say.classList.add("ok");
+    if(!seen[level].includes(item.id)){seen[level].push(item.id);store.set("cs-seen-"+level,seen[level]);}
+  }else{
+    btn.classList.add("no");wrong.push(item);
+    say.textContent="Răspunsul corect: "+item.ok;say.classList.add("no");
+  }
+  const n=$("next");
+  n.textContent=pos===test.length-1?"Vezi rezultatul":"Mai departe";
+  n.hidden=false;n.focus();
+}
+
+function finish(){
+  const n=test.length;
+  $("prog").style.width="100%";
+  $("sc").textContent=score;$("of").textContent="din "+n;
+  const stars=Math.round(score/n*5);
+  $("stars").textContent="★".repeat(stars)+"☆".repeat(5-stars);
+  const r=score/n;
+  $("endTitle").textContent=r===1?"Perfect!":r>=0.8?"Foarte bine!":r>=0.5?"Bine!":"Mai încearcă!";
+  $("endMsg").textContent=r===1?"Ai răspuns corect la toate întrebările.":r>=0.8?"Știi foarte multe lucruri.":r>=0.5?"Ai învățat lucruri noi astăzi.":"Citește răspunsurile de mai jos și fă alt test.";
+  const ul=$("fix");ul.textContent="";
+  wrong.forEach(w=>{
+    const li=document.createElement("li");
+    const q=document.createElement("span");q.className="read";q.textContent=w.q;
+    const a=document.createElement("b");a.className="read";a.textContent=w.ok;
+    li.append(q,a);ul.appendChild(li);
+  });
+  $("fixCard").hidden=wrong.length===0;
+  show("end");
+}
+
+[1,2,3].forEach(n=>{$("lvl"+n).onclick=()=>{level=n;store.set("cs-level",n);paintHome();};});
+document.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{size=Number(b.dataset.n);store.set("cs-size",size);paintHome();});
+$("caps").onclick=()=>{caps=!caps;store.set("cs-caps",caps);paintHome();};
+$("start").onclick=startTest;
+$("again").onclick=startTest;
+$("back").onclick=()=>{paintHome();show("home");};
+$("quit").onclick=()=>{paintHome();show("home");};
+$("next").onclick=()=>{pos++;if(pos<test.length)paintQuestion();else finish();};
+paintHome();
+</script>
+</body>
+</html>
