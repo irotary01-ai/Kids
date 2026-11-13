@@ -9,3 +9,11 @@ Joc de citire și cultură generală pentru copii de 6–9 ani, în limba român
 - opțiune „LITERE MARI DE TIPAR”
 
 Tot jocul este într-un singur fișier: `index.html`. Se deschide direct în browser sau prin GitHub Pages.
+
+# Socotesc singur
+
+Joc de matematică și citire pentru aceleași vârste: `matematica.html`.
+
+- 3 niveluri: numere până la 20, până la 100, apoi înmulțiri, împărțiri și probleme
+- problemele primesc numere noi la fiecare test, plus întrebări de matematică distractivă
+- aceleași opțiuni de citire: pe silabe în două culori și litere mari de tipar

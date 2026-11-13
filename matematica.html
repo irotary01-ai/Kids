@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Socotesc singur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow reading column, one question per screen, four stacked word answers. */
+:root{
+  --paper:#eef4fb;
+  --card:#ffffff;
+  --ink:#14284a;
+  --soft:#566a8c;
+  --line:#c9d7ea;
+  --accent:#1f5fd0;
+  --accent-ink:#ffffff;
+  --sun:#ffc93c;
+  --good:#12805a;
+  --good-bg:#dcf5ea;
+  --bad:#b8323c;
+  --bad-bg:#fbe1e3;
+  --syl-a:#be1b2e;
+  --syl-b:#124fae;
+  --font:"Andika","Trebuchet MS","Verdana",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0f1a2e;--card:#18263f;--ink:#eaf1fb;--soft:#a3b4d0;--line:#31446a;
+    --accent:#6ea4ff;--accent-ink:#0b1730;--sun:#ffc93c;
+    --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;--syl-a:#ff7482;--syl-b:#7fb2ff;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0f1a2e;--card:#18263f;--ink:#eaf1fb;--soft:#a3b4d0;--line:#31446a;
+  --accent:#6ea4ff;--accent-ink:#0b1730;--sun:#ffc93c;
+  --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;--syl-a:#ff7482;--syl-b:#7fb2ff;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:18px;line-height:1.45}
+main{max-width:620px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
+h1 span{box-shadow:inset 0 -0.38em 0 var(--sun)}
+h2{font-size:22px;margin:0;text-wrap:balance}
+p{margin:0}
+.soft{color:var(--soft)}
+.small{font-size:16px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 130px}
+button{font:inherit;color:inherit;cursor:pointer;border-radius:14px;border:2px solid var(--line);background:var(--card);padding:14px 16px;text-align:left}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.pick[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.pick b{display:block;font-size:20px}
+.seg button{text-align:center;padding:10px;font-weight:700}
+.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;font-size:22px;text-align:center;padding:16px}
+.plain{text-align:center;font-weight:700}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700}
+.top button{padding:8px 12px;font-size:16px;font-weight:400}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--sun);width:0;transition:width .3s}
+.cat{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);font-weight:700}
+.q{font-size:28px;line-height:1.3;font-weight:700;text-wrap:balance;font-variant-numeric:tabular-nums}
+.answers{display:flex;flex-direction:column;gap:12px}
+.ans{display:flex;gap:14px;align-items:center;font-size:23px;line-height:1.3;padding:16px}
+.ans .k{flex:none;width:38px;height:38px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:18px;font-weight:700;color:var(--soft)}
+.ans.ok{background:var(--good-bg);border-color:var(--good)}
+.ans.ok .k{border-color:var(--good);color:var(--good)}
+.ans.no{background:var(--bad-bg);border-color:var(--bad)}
+.ans.no .k{border-color:var(--bad);color:var(--bad)}
+.ans:disabled{cursor:default;opacity:1;color:var(--ink)}
+.say{font-size:22px;font-weight:700;min-height:32px}
+.say.ok{color:var(--good)}
+.say.no{color:var(--bad)}
+.score{font-size:56px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.score small{font-size:24px;color:var(--soft);font-weight:400}
+.stars{font-size:34px;letter-spacing:6px;color:var(--sun)}
+ul.fix{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+ul.fix li{border-left:5px solid var(--sun);padding-left:12px}
+ul.fix b{display:block;color:var(--good)}
+body.caps .read{text-transform:uppercase}
+.sy{padding-right:.05em}
+.sy.a{color:var(--syl-a)}
+.sy.b{color:var(--syl-b)}
+[hidden]{display:none!important}
+@media (max-width:400px){.q{font-size:25px}.ans{font-size:21px}h1{font-size:30px}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+
+<section id="home">
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <h1><span>Socotesc singur</span></h1>
+    <p class="read">Citește problema. Socotește. Alege răspunsul corect. La fiecare test numerele se schimbă.</p>
+
+    <div class="card">
+      <h2 class="read">Alege nivelul</h2>
+      <div class="row">
+        <button class="pick" id="lvl1" type="button" aria-pressed="true"><b class="read">Nivelul 1</b><span class="soft small read">Numere până la 20</span></button>
+        <button class="pick" id="lvl2" type="button" aria-pressed="false"><b class="read">Nivelul 2</b><span class="soft small read">Numere până la 100</span></button>
+        <button class="pick" id="lvl3" type="button" aria-pressed="false"><b class="read">Nivelul 3</b><span class="soft small read">Înmulțiri, împărțiri, probleme</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="read">Câte probleme vrei?</h2>
+      <div class="row seg">
+        <button class="pick" type="button" data-n="5" aria-pressed="false">5</button>
+        <button class="pick" type="button" data-n="10" aria-pressed="true">10</button>
+        <button class="pick" type="button" data-n="15" aria-pressed="false">15</button>
+        <button class="pick" type="button" data-n="20" aria-pressed="false">20</button>
+      </div>
+      <button class="pick plain" id="sylBtn" type="button" aria-pressed="false"><span class="sy a">Ci</span><span class="sy b">ti</span><span class="sy a">re</span> <span class="sy b">pe</span> <span class="sy a">si</span><span class="sy b">la</span><span class="sy a">be</span></button>
+      <button class="pick plain" id="caps" type="button" aria-pressed="false">LITERE MARI DE TIPAR</button>
+    </div>
+
+    <button class="go read" id="start" type="button">Începe testul</button>
+    <p class="soft small">Problemele au numere noi la fiecare test, așa că nu se repetă. Fiecare test are și câteva întrebări de matematică distractivă.</p>
+  </div>
+</section>
+
+<section id="quiz" hidden>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="top"><span id="count" class="read"></span><button id="quit" type="button" class="read">Oprește</button></div>
+    <div class="bar"><i id="prog"></i></div>
+    <div class="card">
+      <span class="cat" id="cat"></span>
+      <p class="q read" id="q"></p>
+    </div>
+    <div class="answers" id="answers"></div>
+    <p class="say read" id="say" aria-live="polite"></p>
+    <button class="go read" id="next" type="button" hidden>Mai departe</button>
+  </div>
+</section>
+
+<section id="end" hidden>
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div class="card">
+      <h2 class="read" id="endTitle"></h2>
+      <div class="score"><span id="sc"></span> <small id="of"></small></div>
+      <div class="stars" id="stars" aria-hidden="true"></div>
+      <p class="read" id="endMsg"></p>
+    </div>
+    <div class="card" id="fixCard">
+      <h2 class="read">Citește încă o dată</h2>
+      <ul class="fix" id="fix"></ul>
+    </div>
+    <button class="go read" id="again" type="button">Alt test</button>
+    <button class="plain read" id="back" type="button">Schimbă nivelul</button>
+  </div>
+</section>
+
+</main>
+<script>
+/* Despărțire în silabe pentru limba română: reguli generale + indicii + excepții. */
+const SYL_HINTS = "amfibi|an propi|a astero|id ona|u za|ur a|uz a|ude babu|in cro|a fă|i|n gă|i|n dro|a oce|an pi|ad pi|an gu|in re|ac sca|un cra|i|n zu|in".split(" ");
+const SYL_EXC = {};
+"a-ur a-u-rul ci-ti dor-mi fo-lo-si fu-gi hră-ni mun-ci por-ni cook cru-soe de-foe dă-ru-im tră-im do-uă-spre-ze-ce cinci-spre-ze-ce fer-ra-ri go-bi ka-la-ha-ri iu-ri tsu-na-mi van-ghe-li vin-ci geor-ge i-on î-na-in-te las-sie louis mouse mont-gol-fier ne-a-tent pas-teur per-rault saw-yer rud-yard york wa-shing-ton week-end vi-e-na arm-strong mün-chen a-ici ui-tă ui-te nacl co h o".split(" ").forEach(w => { SYL_EXC[w.replace(/-/g, "")] = w; });
+const SYL_V = "aăâeiîouy";
+const SYL_SPLIT21 = ["lpt","mpt","mpț","ncș","nct","ncț","ndv","rct","rtf","stm","ndb","nsf","rsb","ncn"];
+
+function syllables(word) {
+  const lw = word.toLowerCase(), n = lw.length;
+  const cutAt = pattern => {
+    const out = []; let i = 0;
+    pattern.split("-").forEach(p => { out.push(word.slice(i, i + p.length)); i += p.length; });
+    return out;
+  };
+  if (Object.prototype.hasOwnProperty.call(SYL_EXC, lw)) return cutAt(SYL_EXC[lw]);
+  if (n < 2 || /[0-9]/.test(lw)) return [word];
+  const isV = i => i >= 0 && i < n && SYL_V.includes(lw[i]);
+  const F = new Set();
+  SYL_HINTS.forEach(h => {
+    const plain = h.replace(/\|/g, "");
+    const pos = plain ? lw.indexOf(plain) : -1;
+    if (pos < 0) return;
+    let off = 0;
+    for (const ch of h) { if (ch === "|") F.add(pos + off); else off++; }
+  });
+  const type = new Array(n).fill("C");
+  let nuclei = 0;
+  for (let s = 0; s < n; s++) {
+    if (!isV(s)) continue;
+    let e = s; while (isV(e)) e++;
+    let cs = s; while (cs > 0 && !isV(cs - 1)) cs--;
+    const cl = lw.slice(cs, s);
+    const atEnd = e === n;
+    const afterCH = /(ch|gh)$/.test(cl), afterCG = /[cg]$/.test(cl);
+    const labial = /[pbfvm]$/.test(cl), liquid = /[^lr][lr]$/.test(cl);
+    if (e - s === 1 && lw[s] === "i" && atEnd && s > 0 && nuclei > 0 && !liquid) { type[s] = "c"; break; }
+    let k = s;
+    while (k < e) {
+      const c = lw[k], n1 = k + 1 < e ? lw[k + 1] : "", n2 = k + 2 < e ? lw[k + 2] : "";
+      const first = k === s, tail = lw.slice(k + 1);
+      let glide = false;
+      if (n1 && !F.has(k + 1)) {
+        if ((c === "e" || c === "o") && n1 === "a") glide = true;
+        else if (c === "i" && n1 !== "i") {
+          if (!first || s === 0) glide = true;
+          else if (afterCH) glide = "aou".includes(n1);
+          else if (afterCG) glide = n1 === "o" || n1 === "u";
+          else if (liquid) glide = false;
+          else if (atEnd && e - k === 2 && (n1 === "a" || n1 === "e")) glide = false;
+          else if (atEnd && lw.slice(k) === "iei") glide = false;
+          else if (n1 === "a" || n1 === "e") glide = labial;
+        } else if (c === "u" && !first && n1 !== "u") glide = true;
+      }
+      if (glide) { type[k] = "g"; k++; continue; }
+      type[k] = "V"; nuclei++;
+      if (n1 && !n2 && !F.has(k + 1)) {
+        let coda = false;
+        if (n1 === "i") {
+          if (atEnd) coda = true;
+          else if (c === "i") coda = false;
+          else if (["it","iți","ită","ite","itul","ita","ind"].includes(tail)) coda = false;
+          else coda = !(c === "u" && liquid && first);
+        } else if (n1 === "u" && c !== "u") {
+          coda = atEnd ? true : (c === "a" || (c === "e" && s === 0 && first) || (c === "i" && tail === "ul" && !liquid));
+        }
+        if (coda) { type[k + 1] = "c"; k += 2; continue; }
+      }
+      k++;
+    }
+    s = e - 1;
+  }
+  const nuc = []; for (let i = 0; i < n; i++) if (type[i] === "V") nuc.push(i);
+  if (nuc.length < 2) return [word];
+  const cuts = [];
+  for (let j = 0; j + 1 < nuc.length; j++) {
+    let a = nuc[j] + 1; while (type[a] === "c") a++;
+    let b = nuc[j + 1]; while (type[b - 1] === "g") b--;
+    let forced = -1; for (let i = a; i <= b; i++) if (F.has(i)) forced = i;
+    if (forced >= 0) { cuts.push(forced); continue; }
+    const units = [];
+    for (let i = a; i < b; i++) {
+      if ((lw[i] === "c" || lw[i] === "g") && lw[i + 1] === "h" && i + 1 < b) { units.push([i, lw.slice(i, i + 2)]); i++; }
+      else units.push([i, lw[i]]);
+    }
+    const m = units.length;
+    let at;
+    if (m <= 1) at = 0;
+    else if (m === 2) at = ("lr".includes(units[1][1]) && "bcdfgptv".includes(units[0][1][0]) && !(units[1][1] === "l" && "td".includes(units[0][1]))) ? 0 : 1;
+    else at = SYL_SPLIT21.includes(units.slice(0, 3).map(u => u[1]).join("")) ? 2 : 1;
+    cuts.push(at >= m ? b : units[at][0]);
+  }
+  const out = []; let p = 0;
+  cuts.forEach(c => { out.push(word.slice(p, c)); p = c; });
+  out.push(word.slice(p));
+  return out;
+}
+
+/* Scrie textul într-un element: simplu sau pe silabe, în două culori alternate. */
+function put(el,txt){
+  el.textContent="";
+  if(!syl){el.textContent=txt;return;}
+  let n=0;
+  txt.split(/([A-Za-zĂÂÎȘȚăâîșțèü]+)/).forEach((part,i)=>{
+    if(!part)return;
+    if(i%2===0){el.append(part);return;}
+    const pieces=/^[IVXLCDM]{2,}$/.test(part)?[part]:syllables(part);
+    pieces.forEach(p=>{const sp=document.createElement("span");sp.className="sy "+(n++%2?"b":"a");sp.textContent=p;el.append(sp);});
+  });
+}
+
+/* ---------- generatoare de probleme: numerele se aleg la întâmplare la fiecare test ---------- */
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const OBJ=[["măr","mere","f"],["nucă","nuci","f"],["bomboană","bomboane","f"],["creion","creioane","f"],["carte","cărți","f"],["minge","mingi","f"],["floare","flori","f"],["balon","baloane","f"],["pară","pere","f"],["cub","cuburi","f"],["timbru","timbre","f"],["biscuit","biscuiți","m"],["pește","pești","m"],["fluture","fluturi","m"]];
+const BOYS=["Dan","Ion","Mihai","Andrei","Radu","Vlad","Luca","Matei"], GIRLS=["Ana","Maria","Elena","Sofia","Ioana","Daria"];
+const THINGS=["un suc","o carte","o minge","un caiet","o ciocolată","o jucărie","un pix"];
+const nm=()=>pick(BOYS.concat(GIRLS));
+function two(){const a=nm();let b=nm();while(b===a)b=nm();return [a,b];}
+const de=n=>(n!==0&&(n%100===0||n%100>=20))?" de ":" ";
+const cnt=(n,o)=>n===1?"1 "+o[0]:n+de(n)+o[1];
+const unit=(n,s,p)=>n===1?"1 "+s:n+de(n)+p;
+const lei=n=>unit(n,"leu","lei");
+const cm=n=>unit(n,"centimetru","centimetri");
+const ani=n=>unit(n,"an","ani");
+const cate=o=>o[2]==="m"?"Câți":"Câte";
+const multe=o=>o[2]==="m"?"mulți":"multe";
+const putine=o=>o[2]==="m"?"puțini":"puține";
+const ceas=m=>Math.floor(m/60)+":"+String(m%60).padStart(2,"0");
+const ROMAN=["","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX"];
+
+function mk(cat,q,ans,extra,fmt){
+  fmt=fmt||String;
+  const ok=x=>Number.isInteger(x)&&x>=0&&x!==ans;
+  const first=[...new Set((extra||[]).filter(ok))].slice(0,2);
+  const near=shuffle([...new Set([ans+1,ans-1,ans+2,ans-2,ans+10,ans-10,ans+3,ans+5].filter(x=>ok(x)&&!first.includes(x)))]);
+  const wrong=first.concat(near).slice(0,3);
+  return {cat,q,ok:fmt(ans),opts:[ans].concat(wrong).map(fmt)};
+}
+function distinct(k,a,b,test){const s=new Set();while(s.size<k){const x=R(a,b);if(!test||test(x))s.add(x);}return [...s];}
+
+const GEN={
+1:[
+ ()=>{const a=R(2,9),b=R(2,9),o=pick(OBJ);return mk("Adunare",`${nm()} are ${cnt(a,o)}. Mai primește ${b}. ${cate(o)} ${o[1]} are acum?`,a+b,[Math.abs(a-b)]);},
+ ()=>{const a=R(5,15),b=R(2,a-2),o=pick(OBJ);return mk("Scădere",`${nm()} are ${cnt(a,o)}. Dă ${b} unui prieten. ${cate(o)} ${o[1]} îi rămân?`,a-b,[a+b]);},
+ ()=>{const a=R(1,10),b=R(1,10);return mk("Adunare",`Cât fac ${a} + ${b}?`,a+b);},
+ ()=>{const a=R(5,20),b=R(1,a-1);return mk("Scădere",`Cât fac ${a} − ${b}?`,a-b,[a+b]);},
+ ()=>{const n=R(3,28);return mk("Numere",`Ce număr vine după ${n}?`,n+1,[n-1]);},
+ ()=>{const n=R(3,28);return mk("Numere",`Ce număr vine înainte de ${n}?`,n-1,[n+1]);},
+ ()=>{const n=R(2,27);return mk("Numere",`Ce număr este între ${n} și ${n+2}?`,n+1,[n+3,n-1]);},
+ ()=>{const v=distinct(4,1,30),m=Math.max(...v);return {cat:"Numere",q:"Care număr este cel mai mare?",ok:String(m),opts:v.map(String)};},
+ ()=>{const v=distinct(4,1,30),m=Math.min(...v);return {cat:"Numere",q:"Care număr este cel mai mic?",ok:String(m),opts:v.map(String)};},
+ ()=>{const [a,l]=pick([["găini",2],["rațe",2],["pisici",4],["câini",4],["vaci",4]]),k=R(2,3);return mk("Probleme",`Câte picioare au ${k} ${a}?`,k*l,[k+l,l]);},
+ ()=>{const n=R(2,10);return mk("Numere",`Care este dublul lui ${n}?`,2*n,[n+2]);},
+ ()=>{const n=2*R(1,10);return mk("Numere",`Cât este jumătate din ${n}?`,n/2,[n-2]);},
+ ()=>{const st=pick([1,2,5,10]),s=st*R(1,4);return mk("Șiruri",`Ce număr urmează: ${s}, ${s+st}, ${s+2*st}, …?`,s+3*st,[s+4*st,s+2*st+1]);},
+ ()=>{const a=R(1,9),b=R(1,9);return mk("Adunare",`${a} + ? = ${a+b}. Ce număr lipsește?`,b,[a+b]);},
+ ()=>{const a=R(3,10),b=R(1,5),o=pick(OBJ),[x,y]=two();return mk("Probleme",`${x} are ${cnt(a,o)}. ${y} are cu ${b} mai ${multe(o)}. ${cate(o)} ${o[1]} are ${y}?`,a+b,[a-b]);},
+ ()=>{const a=R(2,9),b=R(2,9),o=pick(OBJ),[x,y]=two();return mk("Adunare",`${x} are ${cnt(a,o)}, iar ${y} are ${b}. ${cate(o)} ${o[1]} au împreună?`,a+b,[Math.abs(a-b)]);},
+ ()=>{const a=pick([10,15,20]),b=R(2,a-2);return mk("Bani",`Ai ${lei(a)}. Cumperi ${pick(THINGS)} de ${lei(b)}. Câți lei îți rămân?`,a-b,[a+b],lei);}
+],
+2:[
+ ()=>{const a=R(11,60),b=R(11,39);return mk("Adunare",`Cât fac ${a} + ${b}?`,a+b,[a+b-10]);},
+ ()=>{const a=R(30,99),b=R(11,a-5);return mk("Scădere",`Cât fac ${a} − ${b}?`,a-b,[a-b+10]);},
+ ()=>{const a=10*R(1,5),b=10*R(1,4);return mk("Adunare",`Cât fac ${a} + ${b}?`,a+b,[a+b+10,a+b-10]);},
+ ()=>{const t=10*R(4,9),c=R(11,t-10);return mk("Probleme",`O carte are ${t} de pagini. ${nm()} a citit ${c}. Câte pagini mai are de citit?`,t-c,[t+c]);},
+ ()=>{const k=R(2,5),m=pick([2,3,4,5,10]),o=pick(OBJ);return mk("Înmulțire",`Într-o cutie sunt ${cnt(m,o)}. ${cate(o)} ${o[1]} sunt în ${k} cutii?`,k*m,[k+m]);},
+ ()=>{const [a,l]=pick([["găini",2],["pisici",4],["câini",4],["vaci",4],["cai",4]]),k=R(3,6);return mk("Înmulțire",`Câte picioare au ${k} ${a}?`,k*l,[k+l]);},
+ ()=>{const [a,l]=pick([["mașini",4],["biciclete",2],["triciclete",3]]),k=R(2,6);return mk("Înmulțire",`Câte roți au ${k} ${a}?`,k*l,[k+l]);},
+ ()=>{const k=R(2,5);return mk("Timp",`Câte zile sunt în ${k} săptămâni?`,7*k,[5*k,k+7]);},
+ ()=>{const n=R(11,25);return mk("Numere",`Care este dublul lui ${n}?`,2*n,[n+2,2*n+10]);},
+ ()=>{const n=2*R(6,25);return mk("Numere",`Cât este jumătate din ${n}?`,n/2,[n/2+5]);},
+ ()=>{const st=pick([3,4,5,10,20]),s=R(1,10);return mk("Șiruri",`Ce număr urmează: ${s}, ${s+st}, ${s+2*st}, …?`,s+3*st,[s+4*st,s+2*st+1]);},
+ ()=>{const st=pick([2,5,10]),s=st*R(8,10);return mk("Șiruri",`Ce număr urmează: ${s}, ${s-st}, ${s-2*st}, …?`,s-3*st,[s-4*st,s-st]);},
+ ()=>{const a=R(10,50),b=R(5,40);return mk("Adunare",`${a} + ? = ${a+b}. Ce număr lipsește?`,b,[a+b]);},
+ ()=>{const b=R(5,30),c=R(5,40);return mk("Scădere",`? − ${b} = ${c}. Ce număr lipsește?`,b+c,[Math.abs(c-b)]);},
+ ()=>{const a=pick([50,100]),b=R(12,a-10);return mk("Bani",`Ai ${lei(a)}. Cumperi ${pick(THINGS)} de ${lei(b)}. Câți lei îți rămân?`,a-b,[a-b+10],lei);},
+ ()=>{const p=R(3,15),q=R(3,15);return mk("Bani",`Un caiet costă ${lei(p)}, iar un pix costă ${lei(q)}. Cât costă împreună?`,p+q,[Math.abs(p-q)],lei);},
+ ()=>{const e=2*R(5,49),v=distinct(3,5,49).map(x=>2*x+1);return {cat:"Numere",q:"Care număr este par?",ok:String(e),opts:[e].concat(v).map(String)};},
+ ()=>{const e=2*R(5,49)+1,v=distinct(3,5,49).map(x=>2*x);return {cat:"Numere",q:"Care număr este impar?",ok:String(e),opts:[e].concat(v).map(String)};},
+ ()=>{const n=R(21,98);return mk("Numere",`Câte zeci are numărul ${n}?`,Math.floor(n/10),[n%10]);},
+ ()=>{const n=R(21,98);return mk("Numere",`Care este cifra unităților la numărul ${n}?`,n%10,[Math.floor(n/10)]);},
+ ()=>{const a=R(5,9),b=R(2,6);return mk("Probleme",`${pick(BOYS)} are ${ani(a)}. Sora lui este cu ${ani(b)} mai mare. Câți ani are sora lui?`,a+b,[a-b],ani);},
+ ()=>{const h=R(1,9),d=R(1,3);return mk("Timp",`Un film începe la ora ${h}:00 și ține ${d===1?"1 oră":d+" ore"}. La ce oră se termină?`,h+d,[h+d+1,h],x=>x+":00");},
+ ()=>{const n=R(12,85);return mk("Numere",`Ce număr este cu 10 mai mare decât ${n}?`,n+10,[n+1,n-10]);},
+ ()=>{const n=R(22,95);return mk("Numere",`Ce număr este cu 10 mai mic decât ${n}?`,n-10,[n-1,n+10]);}
+],
+3:[
+ ()=>{const a=R(2,9),b=R(2,9);return mk("Înmulțire",`Cât fac ${a} × ${b}?`,a*b,[a*b+a,a*b-b]);},
+ ()=>{const a=R(3,9),b=R(3,9);return mk("Înmulțire",`Într-o sală sunt ${a} rânduri cu câte ${b} scaune. Câte scaune sunt în total?`,a*b,[a+b,a*b+a]);},
+ ()=>{const a=R(2,9),b=R(2,9);return mk("Împărțire",`Cât fac ${a*b} : ${a}?`,b,[a,b+1]);},
+ ()=>{const a=R(2,6),b=R(2,9),o=pick(OBJ);return mk("Împărțire",`${nm()} împarte în mod egal ${cnt(a*b,o)} la ${a} copii. ${cate(o)} ${o[1]} primește fiecare copil?`,b,[a,a*b-a]);},
+ ()=>{const a=5*R(20,120),b=5*R(10,80);return mk("Adunare",`Cât fac ${a} + ${b}?`,a+b,[a+b+100,a+b-10]);},
+ ()=>{const a=5*R(60,200),b=5*R(10,50);return mk("Scădere",`Cât fac ${a} − ${b}?`,a-b,[a-b+100,a-b+10]);},
+ ()=>{const m=pick([50,100]),k=R(2,5),p=R(3,9);return mk("Probleme",`${nm()} are ${lei(m)}. Cumpără ${k} caiete a câte ${lei(p)}. Câți lei îi rămân?`,m-k*p,[m-p,k*p],lei);},
+ ()=>{const k=R(2,6),m=R(3,9),e=R(2,9),o=pick(OBJ);return mk("Probleme",`${nm()} are ${k} pungi cu câte ${cnt(m,o)} și încă ${e}. ${cate(o)} ${o[1]} are în total?`,k*m+e,[k*m,k+m+e]);},
+ ()=>{const s=R(2,12);return mk("Forme",`Un pătrat are latura de ${cm(s)}. Cât este perimetrul lui?`,4*s,[2*s,3*s],cm);},
+ ()=>{const L=R(4,12),w=R(2,L-1);return mk("Forme",`Un dreptunghi are lungimea de ${cm(L)} și lățimea de ${cm(w)}. Cât este perimetrul lui?`,2*(L+w),[L+w,L*w],cm);},
+ ()=>{const [t,d]=pick([["o jumătate",2],["un sfert",4],["o treime",3],["o zecime",10]]),k=R(2,12);return mk("Fracții",`Cât este ${t} din ${d*k}?`,k,[d*k-d,k+d]);},
+ ()=>{const k=R(2,5);return mk("Timp",`Câte minute sunt în ${k} ore?`,60*k,[100*k,60+k]);},
+ ()=>{const k=R(2,5);return mk("Timp",`Câte secunde sunt în ${k} minute?`,60*k,[100*k,60+k]);},
+ ()=>{const k=R(2,4);return mk("Timp",`Câte ore sunt în ${k} zile?`,24*k,[12*k,24+k]);},
+ ()=>{const h=R(6,15),m=pick([0,15,30,45]),dh=R(1,3),dm=pick([15,30,45]),t=h*60+m,r=t+dh*60+dm;return mk("Timp",`Un tren pleacă la ora ${ceas(t)} și merge ${dh===1?"1 oră":dh+" ore"} și ${unit(dm,"minut","minute")}. La ce oră ajunge?`,r,[r+15,r-60,r-15],ceas);},
+ ()=>{const k=R(2,9);return mk("Măsuri",`Câți centimetri sunt în ${k} metri?`,100*k,[10*k,1000*k]);},
+ ()=>{const k=R(2,9);return mk("Măsuri",`Câte grame sunt în ${k} kilograme?`,1000*k,[100*k,10*k]);},
+ ()=>{const k=R(2,9);return mk("Măsuri",`Câți metri sunt în ${k} kilometri?`,1000*k,[100*k,10*k]);},
+ ()=>{const s=R(1,5);return mk("Șiruri",`Ce număr urmează: ${s}, ${2*s}, ${4*s}, …?`,8*s,[6*s,4*s+2]);},
+ ()=>{const st=pick([6,7,8,9,11,25]),s=R(1,12);return mk("Șiruri",`Ce număr urmează: ${s}, ${s+st}, ${s+2*st}, …?`,s+3*st,[s+4*st,s+2*st+1]);},
+ ()=>{const st=pick([7,9,11]),s=100-R(0,9);return mk("Șiruri",`Ce număr urmează: ${s}, ${s-st}, ${s-2*st}, …?`,s-3*st,[s-4*st,s-2*st-1]);},
+ ()=>{const a=R(2,9),b=R(2,9);return mk("Înmulțire",`? × ${a} = ${a*b}. Ce număr lipsește?`,b,[a,a*b-a]);},
+ ()=>{const a=R(2,9),b=R(2,5),c=R(2,5);return mk("Calcule",`Cât fac ${a} + ${b} × ${c}?`,a+b*c,[(a+b)*c]);},
+ ()=>{const v=pick([40,50,60,80,90]),h=R(2,4);return mk("Probleme",`O mașină merge cu ${v} de kilometri pe oră. Câți kilometri parcurge în ${h} ore?`,v*h,[v+h,v*h+v]);},
+ ()=>{const k=R(2,5),a=R(3,10),o=pick(OBJ),[x,y]=two();return mk("Împărțire",`${x} are ${cnt(k*a,o)}. ${y} are de ${k} ori mai ${putine(o)}. ${cate(o)} ${o[1]} are ${y}?`,a,[k*a-k,k*a+k]);},
+ ()=>{const k=R(2,5),a=R(3,10),o=pick(OBJ),[x,y]=two();return mk("Înmulțire",`${x} are ${cnt(a,o)}. ${y} are de ${k} ori mai ${multe(o)}. ${cate(o)} ${o[1]} are ${y}?`,k*a,[a+k,k*a+a]);},
+ ()=>{const n=R(4,20);return mk("Numere",`Ce număr este scris cu cifre romane: ${ROMAN[n]}?`,n,[n+1,n-1]);}
+]};
+
+/* ---------- matematică distractivă: întrebare|corect|greșit|greșit|greșit ---------- */
+const FUN={
+1:`Câte colțuri are un triunghi?|3|4|2|5
+Câte laturi are un pătrat?|4|3|5|6
+Câte roți are o tricicletă?|3|2|4|1
+Câte degete ai la 2 mâini?|10|5|8|20
+Câte urechi au 3 iepuri?|6|3|4|8
+Ai 2 mere și 2 pere. Câte fructe ai?|4|2|3|6
+Pe o creangă stau 5 vrăbii. 2 zboară. Câte rămân pe creangă?|3|2|5|7
+Care formă nu are niciun colț?|Cercul|Pătratul|Triunghiul|Dreptunghiul
+Prima zi a săptămânii este luni. Care este a 3-a zi?|Miercuri|Marți|Joi|Duminică
+Câte zile are o săptămână?|7|5|6|10
+Care număr este mai mare decât 9 și mai mic decât 11?|10|8|12|9
+Câte picioare are un scaun obișnuit?|4|3|2|5
+Ana este mai înaltă decât Dan. Dan este mai înalt decât Ion. Cine este cel mai scund?|Ion|Dan|Ana|Toți sunt la fel
+Un melc urcă 1 metru în fiecare zi. În câte zile urcă 5 metri?|5|1|3|10
+Ce oră arată ceasul la amiază?|12|6|10|3
+Am 10 degete. Ascund 4. Câte degete se văd?|6|4|5|7
+Mama taie un măr în 2 jumătăți. Câte bucăți sunt?|2|1|3|4
+Care număr are 2 cifre?|12|7|9|3
+Câte luni are un an?|12|10|7|4
+În fiecare cuib sunt 3 ouă. Câte ouă sunt în 2 cuiburi?|6|5|3|8
+Am 3 baloane roșii și 2 baloane albastre. Se sparge 1. Câte baloane rămân?|4|5|3|6
+Care este cel mai mic număr cu 2 cifre?|10|11|1|99
+Azi este luni. Ce zi va fi mâine?|Marți|Duminică|Miercuri|Joi
+Câte capete au 4 copii?|4|8|2|1
+O pisică are 4 pisoi. Câte pisici sunt cu totul?|5|4|3|6
+Câte mâini au 3 copii?|6|3|5|9
+Am 5 bomboane. Mănânc 5. Câte bomboane mai am?|0|5|1|10
+Ce număr este cu 1 mai mare decât 19?|20|18|21|29
+Câți ochi au 2 pisici și 1 câine?|6|3|4|5
+Care număr este la mijloc: 4, 5, 6?|5|4|6|15`,
+2:`Un fermier are 5 găini și 2 vaci. Câte picioare au animalele în total?|18|14|28|7
+O cameră are 4 colțuri. În fiecare colț stă o pisică. Câte pisici sunt?|4|16|8|12
+Câte minute are o jumătate de oră?|30|15|60|20
+Câte minute are un sfert de oră?|15|25|30|4
+Câte fețe are un zar?|6|4|8|12
+Un tort se taie în 8 felii egale. Mănânci 3. Câte felii rămân?|5|3|4|11
+Am 3 monede de 5 lei. Câți lei am?|15 lei|8 lei|10 lei|35 de lei
+Care este cel mai mare număr cu 2 cifre?|99|100|90|98
+Câte zile are luna ianuarie?|31|30|28|29
+Azi este vineri. Ce zi a fost ieri?|Joi|Sâmbătă|Miercuri|Luni
+Azi este sâmbătă. Ce zi va fi poimâine?|Luni|Duminică|Marți|Vineri
+Un an are 4 anotimpuri. Câte luni are fiecare anotimp?|3|4|2|6
+Ce este mai greu: 1 kilogram de fier sau 1 kilogram de pene?|Sunt la fel de grele|Fierul|Penele|Nu se poate ști
+Câte degete au 3 copii la mâini?|30|15|20|60
+Ion este al 3-lea la rând. Câți copii sunt în fața lui?|2|3|1|4
+Un bloc are 5 etaje. La fiecare etaj sunt 4 ferestre. Câte ferestre sunt?|20|9|16|25
+Câte jumătăți are un întreg?|2|1|4|3
+Câte sferturi are un întreg?|4|2|3|8
+Ce număr este la mijloc între 10 și 20?|15|12|11|18
+Maria are 2 frați și 1 soră. Câți copii sunt în familie?|4|3|2|5
+Câte ore are o zi întreagă?|24|12|60|10
+Câte zile au 2 săptămâni?|14|7|10|12
+Un ceas arată ora 6:00. Ce oră va fi peste 2 ore?|8:00|4:00|7:00|9:00
+Am 20 de lei în 2 bancnote la fel. Ce bancnote am?|2 de 10 lei|2 de 5 lei|2 de 20 de lei|2 de 1 leu
+Câte roți au 2 mașini și 1 bicicletă?|10|6|8|12
+Ce număr are 3 zeci și 5 unități?|35|53|8|305
+Ana are 12 ani. Dan este cu 2 ani mai mic. Câți ani are Dan?|10 ani|14 ani|12 ani|8 ani
+Care număr este mai aproape de 50?|48|40|60|55
+Câte laturi au 2 triunghiuri?|6|3|8|5
+Un melc urcă 2 metri pe zi. În câte zile urcă 10 metri?|5|2|10|20`,
+3:`Un melc urcă un stâlp de 10 metri. Ziua urcă 3 metri, iar noaptea coboară 2 metri. În a câta zi ajunge sus?|În a 8-a zi|În a 10-a zi|În a 5-a zi|În a 7-a zi
+Un tată are 3 fii. Fiecare fiu are o soră. Câți copii are tatăl?|4|6|3|7
+Într-o curte sunt găini și iepuri: 5 capete și 14 picioare. Câți iepuri sunt?|2|3|1|4
+Câte luni ale anului au 28 de zile?|Toate 12|1|2|11
+Am un număr. Îl înmulțesc cu 2 și obțin 18. Care este numărul?|9|16|20|36
+Am un număr. Scad 7 și obțin 15. Care este numărul?|22|8|21|23
+Care este cel mai mare număr cu 3 cifre?|999|1000|900|990
+Care este cel mai mic număr cu 3 cifre?|100|101|111|99
+Câte minute sunt de la 9:40 până la 10:10?|30|70|50|20
+Un buștean se taie în 4 bucăți. De câte tăieturi este nevoie?|3|4|5|2
+Suma a 3 numere egale este 21. Care este numărul?|7|6|8|3
+Câte zerouri are numărul 1000?|3|2|4|1
+Câte sute are numărul 700?|7|70|0|700
+Ce număr este cu 100 mai mic decât 1000?|900|990|100|1100
+Dan are de 2 ori mai mulți ani decât Ana. Ana are 6 ani. Câți ani are Dan?|12 ani|8 ani|3 ani|4 ani
+Într-o cutie sunt 12 ouă. Jumătate se sparg. Câte ouă rămân întregi?|6|12|4|3
+Câte fețe are un cub?|6|4|8|12
+Câte colțuri are un cub?|8|6|4|12
+Câte laturi are un hexagon?|6|5|8|7
+Un an obișnuit are 365 de zile. Câte zile are un an bisect?|366|364|360|356
+Cât fac 10 × 10 × 10?|1000|100|300|30
+Care număr se împarte exact la 5?|35|32|41|54
+Care număr se împarte exact la 3?|27|25|20|31
+Azi este miercuri. Ce zi va fi peste 7 zile?|Miercuri|Marți|Joi|Duminică
+Ceasul arată ora 3:00. Câte grade are unghiul dintre ace?|90|45|180|30
+Cât fac X + V, în cifre romane?|XV|XX|VX|IX
+Ion are 3 tricouri și 2 perechi de pantaloni. În câte feluri se poate îmbrăca?|6|5|3|8
+Câți ani are un secol?|100|10|50|1000
+Două pisici prind 2 șoareci în 2 minute. Câte pisici prind 4 șoareci în 4 minute?|2|4|8|1
+Un număr înmulțit cu el însuși face 49. Care este numărul?|7|9|24|8
+Câte sferturi de oră sunt în 2 ore?|8|4|6|30
+Dan are 3 mere și le împarte egal cu 2 prieteni. Câte mere primește fiecare dintre cei 3 copii?|1|2|3|6
+Care număr este și par, și mai mare decât 100?|102|98|101|99
+Câte zile sunt în 10 săptămâni?|70|17|50|100`};
+function parseFun(src){return src.trim().split("\n").map((l,i)=>{const p=l.split("|");return {id:i,cat:"Matematică distractivă",q:p[0],ok:p[1],opts:p.slice(1,5)};});}
+const BANK={1:parseFun(FUN[1]),2:parseFun(FUN[2]),3:parseFun(FUN[3])};
+
+const $=id=>document.getElementById(id);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+};
+let level=store.get("ms-level",1), size=store.get("ms-size",10), caps=store.get("ms-caps",false), syl=store.get("ms-syl",false);
+let seen={1:store.get("ms-seen-1",[]),2:store.get("ms-seen-2",[]),3:store.get("ms-seen-3",[])};
+if(![1,2,3].includes(level))level=1;
+let test=[],pos=0,score=0,wrong=[];
+
+function show(id){["home","quiz","end"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);}
+
+function paintHome(){
+  [1,2,3].forEach(n=>$("lvl"+n).setAttribute("aria-pressed",level===n));
+  document.querySelectorAll("[data-n]").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.n)===size));
+  $("caps").setAttribute("aria-pressed",caps);
+  $("sylBtn").setAttribute("aria-pressed",syl);
+  document.body.classList.toggle("caps",caps);
+}
+
+/* Un test = probleme cu numere noi + câteva întrebări distractive nevăzute încă. */
+function buildTest(){
+  const nFun=Math.max(1,Math.round(size*0.3));
+  const all=BANK[level];
+  let fresh=shuffle(all.filter(x=>!seen[level].includes(x.id)));
+  if(fresh.length<nFun){
+    seen[level]=[];store.set("ms-seen-"+level,[]);
+    const ids=new Set(fresh.map(x=>x.id));
+    fresh=fresh.concat(shuffle(all.filter(x=>!ids.has(x.id))));
+  }
+  const out=fresh.slice(0,nFun);
+  const used=new Set(out.map(x=>x.q));
+  let gens=[],guard=0;
+  while(out.length<size&&guard++<500){
+    if(!gens.length)gens=shuffle(GEN[level]);
+    const it=gens.pop()();
+    if(used.has(it.q)||new Set(it.opts).size!==4)continue;
+    used.add(it.q);out.push(it);
+  }
+  return shuffle(out);
+}
+
+function startTest(){test=buildTest();pos=0;score=0;wrong=[];show("quiz");paintQuestion();}
+
+function paintQuestion(){
+  const item=test[pos];
+  $("count").textContent="Problema "+(pos+1)+" din "+test.length;
+  $("prog").style.width=(pos/test.length*100)+"%";
+  $("cat").textContent=item.cat;
+  put($("q"),item.q);
+  $("say").textContent="";$("say").className="say read";
+  $("next").hidden=true;
+  const box=$("answers");box.textContent="";
+  shuffle(item.opts).forEach((txt,i)=>{
+    const b=document.createElement("button");
+    b.type="button";b.className="ans";
+    const k=document.createElement("span");k.className="k";k.textContent="ABCD"[i];
+    const t=document.createElement("span");t.className="read";put(t,txt);
+    b.append(k,t);
+    b.addEventListener("click",()=>answer(b,txt));
+    box.appendChild(b);
+  });
+}
+
+function answer(btn,txt){
+  const item=test[pos];
+  const right=txt===item.ok;
+  document.querySelectorAll(".ans").forEach(b=>{
+    b.disabled=true;
+    if(b.lastChild.textContent===item.ok)b.classList.add("ok");
+  });
+  const say=$("say");
+  if(right){
+    score++;say.textContent="Corect!";say.classList.add("ok");
+    if(item.id!==undefined&&!seen[level].includes(item.id)){seen[level].push(item.id);store.set("ms-seen-"+level,seen[level]);}
+  }else{
+    btn.classList.add("no");wrong.push(item);
+    say.textContent="Răspunsul corect: "+item.ok;say.classList.add("no");
+  }
+  const n=$("next");
+  n.textContent=pos===test.length-1?"Vezi rezultatul":"Mai departe";
+  n.hidden=false;n.focus();
+}
+
+function finish(){
+  const n=test.length;
+  $("prog").style.width="100%";
+  $("sc").textContent=score;$("of").textContent="din "+n;
+  const stars=Math.round(score/n*5);
+  $("stars").textContent="★".repeat(stars)+"☆".repeat(5-stars);
+  const r=score/n;
+  $("endTitle").textContent=r===1?"Perfect!":r>=0.8?"Foarte bine!":r>=0.5?"Bine!":"Mai încearcă!";
+  $("endMsg").textContent=r===1?"Ai rezolvat corect toate problemele.":r>=0.8?"Socotești foarte bine.":r>=0.5?"Ai exersat bine astăzi.":"Citește răspunsurile de mai jos și fă alt test.";
+  const ul=$("fix");ul.textContent="";
+  wrong.forEach(w=>{
+    const li=document.createElement("li");
+    const q=document.createElement("span");q.className="read";put(q,w.q);
+    const a=document.createElement("b");a.className="read";put(a,w.ok);
+    li.append(q,a);ul.appendChild(li);
+  });
+  $("fixCard").hidden=wrong.length===0;
+  show("end");
+}
+
+[1,2,3].forEach(n=>{$("lvl"+n).onclick=()=>{level=n;store.set("ms-level",n);paintHome();};});
+document.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{size=Number(b.dataset.n);store.set("ms-size",size);paintHome();});
+$("sylBtn").onclick=()=>{syl=!syl;store.set("ms-syl",syl);paintHome();};
+$("caps").onclick=()=>{caps=!caps;store.set("ms-caps",caps);paintHome();};
+$("start").onclick=startTest;
+$("again").onclick=startTest;
+$("back").onclick=()=>{paintHome();show("home");};
+$("quit").onclick=()=>{paintHome();show("home");};
+$("next").onclick=()=>{pos++;if(pos<test.length)paintQuestion();else finish();};
+if(typeof document!=="undefined"&&$("home"))paintHome();
+</script>
+</body>
+</html>
