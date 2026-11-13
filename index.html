@@ -22,6 +22,8 @@
   --good-bg:#dcf5ea;
   --bad:#b8323c;
   --bad-bg:#fbe1e3;
+  --syl-a:#be1b2e;
+  --syl-b:#124fae;
   --font:"Andika","Trebuchet MS","Verdana",sans-serif;
   color-scheme:light;
 }
@@ -29,14 +31,14 @@
   :root:not([data-theme="light"]){
     --paper:#0f1a2e;--card:#18263f;--ink:#eaf1fb;--soft:#a3b4d0;--line:#31446a;
     --accent:#6ea4ff;--accent-ink:#0b1730;--sun:#ffc93c;
-    --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;
+    --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;--syl-a:#ff7482;--syl-b:#7fb2ff;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --paper:#0f1a2e;--card:#18263f;--ink:#eaf1fb;--soft:#a3b4d0;--line:#31446a;
   --accent:#6ea4ff;--accent-ink:#0b1730;--sun:#ffc93c;
-  --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;
+  --good:#5fd6a6;--good-bg:#143a2d;--bad:#ff8f97;--bad-bg:#45191d;--syl-a:#ff7482;--syl-b:#7fb2ff;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -83,6 +85,9 @@ ul.fix{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap
 ul.fix li{border-left:5px solid var(--sun);padding-left:12px}
 ul.fix b{display:block;color:var(--good)}
 body.caps .read{text-transform:uppercase}
+.sy{padding-right:.05em}
+.sy.a{color:var(--syl-a)}
+.sy.b{color:var(--syl-b)}
 [hidden]{display:none!important}
 @media (max-width:400px){.q{font-size:25px}.ans{font-size:21px}h1{font-size:30px}}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
@@ -113,6 +118,7 @@ body.caps .read{text-transform:uppercase}
         <button class="pick" type="button" data-n="15" aria-pressed="false">15</button>
         <button class="pick" type="button" data-n="20" aria-pressed="false">20</button>
       </div>
+      <button class="pick plain" id="sylBtn" type="button" aria-pressed="false"><span class="sy a">Ci</span><span class="sy b">ti</span><span class="sy a">re</span> <span class="sy b">pe</span> <span class="sy a">si</span><span class="sy b">la</span><span class="sy a">be</span></button>
       <button class="pick plain" id="caps" type="button" aria-pressed="false">LITERE MARI DE TIPAR</button>
     </div>
 
@@ -755,6 +761,115 @@ Ce sunt microbii?|Ființe foarte mici, care pot aduce boli|Insecte mari|Vitamine
 Ce ne apără de unele boli grave?|Vaccinul|Ciocolata|Frigul|Zgomotul
 `;
 
+/* Despărțire în silabe pentru limba română: reguli generale + indicii + excepții. */
+const SYL_HINTS = "amfibi|an propi|a astero|id ona|u za|ur a|uz a|ude babu|in cro|a fă|i|n gă|i|n dro|a oce|an pi|ad pi|an gu|in re|ac sca|un cra|i|n zu|in".split(" ");
+const SYL_EXC = {};
+"a-ur a-u-rul ci-ti dor-mi fo-lo-si fu-gi hră-ni mun-ci por-ni cook cru-soe de-foe dă-ru-im tră-im do-uă-spre-ze-ce cinci-spre-ze-ce fer-ra-ri go-bi ka-la-ha-ri iu-ri tsu-na-mi van-ghe-li vin-ci geor-ge i-on î-na-in-te las-sie louis mouse mont-gol-fier ne-a-tent pas-teur per-rault saw-yer rud-yard york wa-shing-ton week-end vi-e-na arm-strong mün-chen a-ici ui-tă ui-te nacl co h o".split(" ").forEach(w => { SYL_EXC[w.replace(/-/g, "")] = w; });
+const SYL_V = "aăâeiîouy";
+const SYL_SPLIT21 = ["lpt","mpt","mpț","ncș","nct","ncț","ndv","rct","rtf","stm","ndb","nsf","rsb"];
+
+function syllables(word) {
+  const lw = word.toLowerCase(), n = lw.length;
+  const cutAt = pattern => {
+    const out = []; let i = 0;
+    pattern.split("-").forEach(p => { out.push(word.slice(i, i + p.length)); i += p.length; });
+    return out;
+  };
+  if (Object.prototype.hasOwnProperty.call(SYL_EXC, lw)) return cutAt(SYL_EXC[lw]);
+  if (n < 2 || /[0-9]/.test(lw)) return [word];
+  const isV = i => i >= 0 && i < n && SYL_V.includes(lw[i]);
+  const F = new Set();
+  SYL_HINTS.forEach(h => {
+    const plain = h.replace(/\|/g, "");
+    const pos = plain ? lw.indexOf(plain) : -1;
+    if (pos < 0) return;
+    let off = 0;
+    for (const ch of h) { if (ch === "|") F.add(pos + off); else off++; }
+  });
+  const type = new Array(n).fill("C");
+  let nuclei = 0;
+  for (let s = 0; s < n; s++) {
+    if (!isV(s)) continue;
+    let e = s; while (isV(e)) e++;
+    let cs = s; while (cs > 0 && !isV(cs - 1)) cs--;
+    const cl = lw.slice(cs, s);
+    const atEnd = e === n;
+    const afterCH = /(ch|gh)$/.test(cl), afterCG = /[cg]$/.test(cl);
+    const labial = /[pbfvm]$/.test(cl), liquid = /[^lr][lr]$/.test(cl);
+    if (e - s === 1 && lw[s] === "i" && atEnd && s > 0 && nuclei > 0 && !liquid) { type[s] = "c"; break; }
+    let k = s;
+    while (k < e) {
+      const c = lw[k], n1 = k + 1 < e ? lw[k + 1] : "", n2 = k + 2 < e ? lw[k + 2] : "";
+      const first = k === s, tail = lw.slice(k + 1);
+      let glide = false;
+      if (n1 && !F.has(k + 1)) {
+        if ((c === "e" || c === "o") && n1 === "a") glide = true;
+        else if (c === "i" && n1 !== "i") {
+          if (!first || s === 0) glide = true;
+          else if (afterCH) glide = "aou".includes(n1);
+          else if (afterCG) glide = n1 === "o" || n1 === "u";
+          else if (liquid) glide = false;
+          else if (atEnd && e - k === 2 && (n1 === "a" || n1 === "e")) glide = false;
+          else if (atEnd && lw.slice(k) === "iei") glide = false;
+          else if (n1 === "a" || n1 === "e") glide = labial;
+        } else if (c === "u" && !first && n1 !== "u") glide = true;
+      }
+      if (glide) { type[k] = "g"; k++; continue; }
+      type[k] = "V"; nuclei++;
+      if (n1 && !n2 && !F.has(k + 1)) {
+        let coda = false;
+        if (n1 === "i") {
+          if (atEnd) coda = true;
+          else if (c === "i") coda = false;
+          else if (["it","iți","ită","ite","itul","ita","ind"].includes(tail)) coda = false;
+          else coda = !(c === "u" && liquid && first);
+        } else if (n1 === "u" && c !== "u") {
+          coda = atEnd ? true : (c === "a" || (c === "e" && s === 0 && first) || (c === "i" && tail === "ul" && !liquid));
+        }
+        if (coda) { type[k + 1] = "c"; k += 2; continue; }
+      }
+      k++;
+    }
+    s = e - 1;
+  }
+  const nuc = []; for (let i = 0; i < n; i++) if (type[i] === "V") nuc.push(i);
+  if (nuc.length < 2) return [word];
+  const cuts = [];
+  for (let j = 0; j + 1 < nuc.length; j++) {
+    let a = nuc[j] + 1; while (type[a] === "c") a++;
+    let b = nuc[j + 1]; while (type[b - 1] === "g") b--;
+    let forced = -1; for (let i = a; i <= b; i++) if (F.has(i)) forced = i;
+    if (forced >= 0) { cuts.push(forced); continue; }
+    const units = [];
+    for (let i = a; i < b; i++) {
+      if ((lw[i] === "c" || lw[i] === "g") && lw[i + 1] === "h" && i + 1 < b) { units.push([i, lw.slice(i, i + 2)]); i++; }
+      else units.push([i, lw[i]]);
+    }
+    const m = units.length;
+    let at;
+    if (m <= 1) at = 0;
+    else if (m === 2) at = ("lr".includes(units[1][1]) && "bcdfgptv".includes(units[0][1][0]) && !(units[1][1] === "l" && "td".includes(units[0][1]))) ? 0 : 1;
+    else at = SYL_SPLIT21.includes(units.slice(0, 3).map(u => u[1]).join("")) ? 2 : 1;
+    cuts.push(at >= m ? b : units[at][0]);
+  }
+  const out = []; let p = 0;
+  cuts.forEach(c => { out.push(word.slice(p, c)); p = c; });
+  out.push(word.slice(p));
+  return out;
+}
+
+/* Scrie textul într-un element: simplu sau pe silabe, în două culori alternate. */
+function put(el,txt){
+  el.textContent="";
+  if(!syl){el.textContent=txt;return;}
+  let n=0;
+  txt.split(/([A-Za-zĂÂÎȘȚăâîșțèü]+)/).forEach((part,i)=>{
+    if(!part)return;
+    if(i%2===0){el.append(part);return;}
+    syllables(part).forEach(p=>{const sp=document.createElement("span");sp.className="sy "+(n++%2?"b":"a");sp.textContent=p;el.append(sp);});
+  });
+}
+
 function parse(src){
   const out=[];let cat="";
   src.trim().split("\n").forEach(line=>{
@@ -773,7 +888,7 @@ const store={
 };
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
-let level=store.get("cs-level",1), size=store.get("cs-size",10), caps=store.get("cs-caps",false);
+let level=store.get("cs-level",1), size=store.get("cs-size",10), caps=store.get("cs-caps",false), syl=store.get("cs-syl",false);
 let seen={1:store.get("cs-seen-1",[]),2:store.get("cs-seen-2",[]),3:store.get("cs-seen-3",[])};
 if(![1,2,3].includes(level))level=1;
 let test=[],pos=0,score=0,wrong=[];
@@ -784,6 +899,7 @@ function paintHome(){
   [1,2,3].forEach(n=>{$("lvl"+n).setAttribute("aria-pressed",level===n);$("c"+n).textContent=BANK[n].length+" întrebări";});
   document.querySelectorAll("[data-n]").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.n)===size));
   $("caps").setAttribute("aria-pressed",caps);
+  $("sylBtn").setAttribute("aria-pressed",syl);
   document.body.classList.toggle("caps",caps);
   const n=BANK[level].length, s=Math.min(seen[level].length,n);
   $("bank").textContent="Nivelul "+level+": ai răspuns corect la "+s+" din "+n+" întrebări. Întrebările greșite revin în testele următoare.";
@@ -819,7 +935,7 @@ function paintQuestion(){
   $("count").textContent="Întrebarea "+(pos+1)+" din "+test.length;
   $("prog").style.width=(pos/test.length*100)+"%";
   $("cat").textContent=item.cat;
-  $("q").textContent=item.q;
+  put($("q"),item.q);
   $("say").textContent="";$("say").className="say read";
   $("next").hidden=true;
   const box=$("answers");box.textContent="";
@@ -827,7 +943,7 @@ function paintQuestion(){
     const b=document.createElement("button");
     b.type="button";b.className="ans";
     const k=document.createElement("span");k.className="k";k.textContent="ABCD"[i];
-    const t=document.createElement("span");t.className="read";t.textContent=txt;
+    const t=document.createElement("span");t.className="read";put(t,txt);
     b.append(k,t);
     b.addEventListener("click",()=>answer(b,txt));
     box.appendChild(b);
@@ -866,8 +982,8 @@ function finish(){
   const ul=$("fix");ul.textContent="";
   wrong.forEach(w=>{
     const li=document.createElement("li");
-    const q=document.createElement("span");q.className="read";q.textContent=w.q;
-    const a=document.createElement("b");a.className="read";a.textContent=w.ok;
+    const q=document.createElement("span");q.className="read";put(q,w.q);
+    const a=document.createElement("b");a.className="read";put(a,w.ok);
     li.append(q,a);ul.appendChild(li);
   });
   $("fixCard").hidden=wrong.length===0;
@@ -876,6 +992,7 @@ function finish(){
 
 [1,2,3].forEach(n=>{$("lvl"+n).onclick=()=>{level=n;store.set("cs-level",n);paintHome();};});
 document.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{size=Number(b.dataset.n);store.set("cs-size",size);paintHome();});
+$("sylBtn").onclick=()=>{syl=!syl;store.set("cs-syl",syl);paintHome();};
 $("caps").onclick=()=>{caps=!caps;store.set("cs-caps",caps);paintHome();};
 $("start").onclick=startTest;
 $("again").onclick=startTest;
